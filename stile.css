@@ -1,0 +1,415 @@
+/* Colori come variabili: un solo posto da toccare per tema chiaro e scuro. */
+:root {
+  --sfondo: #f7f4ee;
+  --superficie: #ffffff;
+  --bordo: #e2ddd3;
+  --testo: #2b2a27;
+  --tenue: #8d887e;
+  --accento: #d9622b;
+  --giusto: #2b2a27;
+  --sbagliato: #c62f2f;
+  --sbagliato-sfondo: #fbe3e1;
+  --da-scrivere: #b3ada2;
+  --tasto: #efebe3;
+  --prossimo: #f6d9c7;
+  --premuto: #bfe3c4;
+  --minore: #a86a00;
+  --minore-sfondo: #fbedc9;
+  /* Linee del grafico: tre tinte verificate (validatore dataviz) anche per chi
+     non distingue bene i colori, sul fondo chiaro #ffffff. */
+  --serie-velocita: #2a78d6;
+  --serie-errori: #eb6834;
+  --serie-fluidita: #1baf7a;
+  --raggio: 12px;
+  color-scheme: light;
+}
+
+/*
+ * Tema scuro in tre casi: il sistema è scuro e nessuno ha scelto il chiaro;
+ * oppure qualcuno (es. claude.ai) imposta data-theme="dark" sulla pagina.
+ * La scelta esplicita vince sempre su quella del sistema, in tutti e due i sensi.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --sfondo: #1b1a18;
+    --superficie: #252421;
+    --bordo: #3a3833;
+    --testo: #ece8e1;
+    --tenue: #9a958b;
+    --accento: #f08a52;
+    --giusto: #ece8e1;
+    --sbagliato: #ff7b72;
+    --sbagliato-sfondo: #4a2421;
+    --da-scrivere: #6c685f;
+    --tasto: #2f2d29;
+    --prossimo: #6b3d22;
+    --premuto: #2f5a36;
+    --minore: #f2c14e;
+    --minore-sfondo: #4a3b17;
+    /* Stesse tinte, gradini scelti e verificati per il fondo scuro #252421. */
+    --serie-velocita: #3987e5;
+    --serie-errori: #d95926;
+    --serie-fluidita: #199e70;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --sfondo: #1b1a18;
+  --superficie: #252421;
+  --bordo: #3a3833;
+  --testo: #ece8e1;
+  --tenue: #9a958b;
+  --accento: #f08a52;
+  --giusto: #ece8e1;
+  --sbagliato: #ff7b72;
+  --sbagliato-sfondo: #4a2421;
+  --da-scrivere: #6c685f;
+  --tasto: #2f2d29;
+  --prossimo: #6b3d22;
+  --premuto: #2f5a36;
+  --minore: #f2c14e;
+  --minore-sfondo: #4a3b17;
+  /* Stesse tinte, gradini scelti e verificati per il fondo scuro #252421. */
+  --serie-velocita: #3987e5;
+  --serie-errori: #d95926;
+  --serie-fluidita: #199e70;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  background: var(--sfondo);
+  color: var(--testo);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.contenitore {
+  /* Cresce con lo schermo fino a 1200 px: su un monitor grande il gioco non
+     resta una colonnina al centro. Oltre, righe troppo lunghe stancano l'occhio. */
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: clamp(16px, 3vh, 32px) 16px 48px;
+}
+
+.testata h1 { margin: 0; font-size: clamp(1.4rem, 1rem + 1.2vw, 2rem); }
+.sottotitolo { margin: 4px 0 clamp(8px, 2vh, 24px); color: var(--tenue); }
+
+/* ---------- Impostazioni ---------- */
+.impostazioni {
+  display: flex; flex-wrap: wrap; gap: 16px;
+  align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.gruppo { display: flex; align-items: center; gap: 6px; }
+.etichetta { color: var(--tenue); margin-right: 4px; }
+.opzione {
+  border: 1px solid var(--bordo); background: var(--superficie); color: var(--testo);
+  padding: 6px 12px; border-radius: 999px; cursor: pointer; font: inherit;
+  white-space: nowrap;
+}
+.opzione.attiva { background: var(--accento); border-color: var(--accento); color: #fff; }
+.interruttore { display: flex; align-items: center; gap: 8px; color: var(--tenue); cursor: pointer; }
+
+/* ---------- Statistiche ---------- */
+.statistiche { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.stat {
+  flex: 1 1 0; min-width: 0; /* sempre affiancate, anche su telefono */
+  background: var(--superficie); border: 1px solid var(--bordo); border-radius: var(--raggio);
+  padding: clamp(8px, 1.5vh, 12px) clamp(10px, 1.5vw, 16px); display: flex; flex-direction: column;
+}
+.valore { font-size: clamp(1.3rem, 1rem + 1vw, 2rem); font-weight: 700; font-variant-numeric: tabular-nums; }
+.nome { color: var(--tenue); font-size: 0.85rem; }
+
+/* ---------- Testo da copiare ---------- */
+.area-testo {
+  position: relative;
+  /* Il riquadro fa da riferimento per le unità "cqi" (1cqi = 1% della sua larghezza). */
+  container-type: inline-size;
+  background: var(--superficie); border: 1px solid var(--bordo); border-radius: var(--raggio);
+  padding: 20px 24px; cursor: text; outline: none;
+}
+.area-testo.a-fuoco { border-color: var(--accento); }
+
+/*
+ * Finestra alta 3 righe: il testo scorre dentro, il cursore resta sulla seconda.
+ * La grandezza del testo segue la larghezza del riquadro (3cqi): così una riga
+ * contiene circa 55 caratteri su qualsiasi schermo, da un portatile a un monitor
+ * grande. I limiti evitano testo minuscolo sul telefono o enorme sui 4K.
+ * L'altezza della riga è in "em", quindi cresce insieme al testo.
+ */
+.finestra {
+  font-size: 1.35rem; /* per i browser senza unità cqi */
+  font-size: clamp(1rem, 3cqi, 2.1rem);
+  --altezza-riga: 1.65em;
+  height: calc(var(--altezza-riga) * 3);
+  overflow: hidden;
+}
+.testo {
+  position: relative; /* serve a offsetTop dei caratteri */
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  line-height: var(--altezza-riga);
+  color: var(--da-scrivere);
+  transition: transform 0.15s ease;
+  word-break: normal;
+}
+.testo span { border-radius: 3px; }
+.testo .giusto { color: var(--giusto); }
+.testo .sbagliato { color: var(--sbagliato); background: var(--sbagliato-sfondo); }
+/* Uno spazio sbagliato sarebbe invisibile: lo segnaliamo col fondo colorato. */
+.testo .spazio.sbagliato { text-decoration: underline wavy var(--sbagliato); }
+/* Errori minori (maiuscola o spazio): giallo, non rosso. */
+.testo .minore { color: var(--minore); background: var(--minore-sfondo); }
+.testo .cursore { box-shadow: inset 2px 0 0 var(--accento); animation: lampeggio 1s step-end infinite; }
+@keyframes lampeggio { 50% { box-shadow: none; } }
+
+/* Il campo vero è invisibile ma resta focalizzabile (anche su mobile). */
+.ingresso {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  opacity: 0; border: 0; cursor: text;
+  font-size: 16px; /* sotto i 16px iOS fa zoom quando il campo prende il fuoco */
+}
+.suggerimento { margin: 12px 0 0; color: var(--tenue); font-size: 0.9rem; }
+
+/* ---------- Risultato ---------- */
+.risultato {
+  background: var(--superficie); border: 1px solid var(--bordo); border-radius: var(--raggio);
+  padding: 20px 24px; text-align: center;
+}
+.risultato h2 { margin-top: 0; }
+.risultato .stat { background: var(--sfondo); flex: 1 1 140px; } /* 2×2 su schermi stretti */
+.risultato .statistiche { margin-bottom: 20px; }
+.primario {
+  background: var(--accento); color: #fff; border: 0; border-radius: 999px;
+  padding: 10px 24px; font: inherit; font-weight: 600; cursor: pointer;
+}
+
+/* ---------- Tastiera ---------- */
+/*
+ * La tastiera si adatta a larghezza E altezza dello schermo: i tasti si
+ * abbassano sugli schermi bassi (portatili, finestre ridotte, zoom), così testo
+ * e tastiera restano visibili insieme senza scorrere mentre scrivi.
+ */
+.tastiera {
+  --spazio-tasti: clamp(3px, 0.5vw, 8px);
+  margin-top: clamp(10px, 2.5vh, 24px);
+  display: flex; flex-direction: column; gap: var(--spazio-tasti); user-select: none;
+}
+.riga { display: flex; gap: var(--spazio-tasti); }
+.tasto {
+  flex: 1 1 0; min-width: 0; height: clamp(26px, 5.5vh, 56px);
+  display: flex; align-items: center; justify-content: center;
+  background: var(--tasto); border: 1px solid var(--bordo); border-radius: clamp(4px, 0.6vw, 10px);
+  font-size: clamp(0.7rem, 0.55rem + 0.4vw, 1.05rem); color: var(--tenue);
+  overflow: hidden; white-space: nowrap;
+  transition: background 0.1s;
+}
+.tasto.prossimo { background: var(--prossimo); color: var(--testo); border-color: var(--accento); }
+.tasto.premuto { background: var(--premuto); }
+.tasto.premuto-errore { background: var(--sbagliato-sfondo); color: var(--sbagliato); }
+.tasto.premuto-minore { background: var(--minore-sfondo); color: var(--minore); }
+/* Mappa di calore a fine test: --intensita va da 0 (pochi errori) a 1 (il tasto peggiore). */
+.tasto.caldo {
+  background: color-mix(in srgb, var(--sbagliato) calc(var(--intensita) * 70% + 15%), var(--tasto));
+  color: var(--testo);
+}
+
+/* ---------- Riquadro errori del risultato ---------- */
+.errori {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+  text-align: left; margin-bottom: 20px;
+}
+.errori h3 { margin: 0 0 8px; font-size: 1rem; }
+.errori ul, .errori ol { margin: 0; padding: 0; list-style: none; }
+.errori li { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.tipi-errore strong { margin-left: auto; font-variant-numeric: tabular-nums; }
+.pallino { width: 10px; height: 10px; border-radius: 50%; }
+.pallino.sbagliato { background: var(--sbagliato); }
+.pallino.minore { background: var(--minore); }
+.nota { color: var(--tenue); font-size: 0.8rem; margin: 8px 0 0; }
+.classifica .vuota { color: var(--tenue); }
+
+.aiuto { margin-top: 16px; color: var(--tenue); font-size: 0.85rem; text-align: center; }
+kbd {
+  border: 1px solid var(--bordo); border-bottom-width: 2px; border-radius: 4px;
+  padding: 1px 6px; font-family: inherit; background: var(--superficie);
+}
+
+/*
+ * La tastiera disegnata sparisce solo dove non serve: sui dispositivi touch
+ * (c'è già la tastiera del telefono) e sotto i 420 px, dove i tasti sarebbero
+ * troppo piccoli per leggerli. Su un computer con la finestra stretta o lo zoom
+ * alto resta, solo più piccola: chi scrive ha una tastiera vera.
+ */
+@media (hover: none) and (pointer: coarse), (max-width: 420px) {
+  .tastiera { display: none; }
+}
+@media (max-width: 640px) {
+  .stat { padding: 10px 12px; }
+  .nome { font-size: 0.75rem; }
+  .area-testo, .risultato { padding: 16px; }
+  .errori { grid-template-columns: 1fr; }
+}
+
+/* ---------- Aggiunte: impostazioni, accessibilità, telefono ---------- */
+select {
+  font: inherit; color: var(--testo); background: var(--superficie);
+  border: 1px solid var(--bordo); border-radius: 8px; padding: 4px 8px;
+}
+.nota-us { margin: -4px 0 16px; color: var(--tenue); font-size: 0.85rem; }
+.primario kbd { background: transparent; color: inherit; border-color: rgba(255, 255, 255, 0.6); margin-left: 6px; }
+.risultato:focus { outline: none; } /* riceve il fuoco solo per proteggere il risultato */
+
+/* Visibile solo ai lettori di schermo. */
+.solo-lettori {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+/* Tab ed Esc non ci sono sulla tastiera del telefono: niente suggerimenti inutili. */
+@media (hover: none) and (pointer: coarse) {
+  .aiuto, .primario kbd { display: none; }
+}
+
+/*
+ * Schermi bassi (portatili 1280×720, finestre ridotte, zoom al 150%): stringiamo
+ * gli spazi verticali così impostazioni, testo e tastiera stanno in una schermata.
+ */
+@media (max-height: 760px) {
+  .sottotitolo { display: none; }
+  .barra-profilo, .impostazioni, .statistiche { margin-bottom: 8px; }
+  .impostazioni { row-gap: 8px; }
+  .opzione { padding: 4px 10px; }
+  .area-testo { padding: 12px 18px; }
+  .suggerimento { margin-top: 6px; }
+  .aiuto { margin-top: 8px; }
+}
+
+/* Telefono stretto: statistiche 2×2, così le etichette non vengono tagliate. */
+@media (max-width: 480px) {
+  .statistiche .stat { flex: 1 1 calc(50% - 6px); }
+}
+
+/* Impostazione che non si applica (es. accenti con la lingua inglese). */
+.interruttore.disattivo { opacity: 0.45; cursor: not-allowed; }
+
+/* ---------- Testata con lingua (il mondo) ---------- */
+.testata { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 12px; }
+.scelta-lingua {
+  display: flex; align-items: center; gap: 6px; color: var(--tenue);
+  border: 1px solid var(--bordo); border-radius: 999px; padding: 4px 6px 4px 10px;
+  background: var(--superficie); cursor: pointer;
+}
+.scelta-lingua select { border: 0; background: transparent; padding: 2px 4px; cursor: pointer; }
+.mondo { flex-shrink: 0; color: var(--accento); }
+
+/* ---------- Profilo ---------- */
+.barra-profilo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 16px; }
+.form-profilo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.form-profilo input {
+  font: inherit; color: var(--testo); background: var(--superficie);
+  border: 1px solid var(--bordo); border-radius: 8px; padding: 5px 10px; width: 12em;
+}
+.errore-nome { color: var(--sbagliato); font-size: 0.85rem; }
+.opzione:disabled { opacity: 0.45; cursor: not-allowed; }
+.opzione.piccola { padding: 2px 10px; font-size: 0.85rem; }
+.avviso { color: var(--minore); background: var(--minore-sfondo); padding: 8px 12px; border-radius: 8px; }
+
+/* ---------- Grafico ---------- */
+.titolo-grafico { text-align: left; margin: 8px 0; font-size: 1rem; }
+.grafico { text-align: left; margin-bottom: 20px; }
+.legenda { display: flex; flex-wrap: wrap; gap: 6px 16px; list-style: none; margin: 0 0 6px; padding: 0; font-size: 0.85rem; color: var(--tenue); }
+.legenda li { display: flex; align-items: center; gap: 6px; }
+.campione { display: inline-block; width: 16px; height: 4px; border-radius: 2px; flex-shrink: 0; }
+.area-grafico { position: relative; outline: none; border-radius: 8px; }
+.area-grafico:focus-visible { box-shadow: 0 0 0 2px var(--accento); }
+.area-grafico svg { display: block; overflow: visible; }
+.area-grafico .linea { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+/* Area sfumata: compare con una dissolvenza mentre la linea si disegna. */
+.area-grafico .area-serie { transition: opacity 900ms ease; }
+.area-grafico svg.in-apertura .area-serie { opacity: 0; }
+.area-grafico .griglia { stroke: var(--bordo); stroke-width: 1; stroke-dasharray: 1 5; opacity: 0.8; }
+.area-grafico .base { stroke: var(--bordo); stroke-width: 1; }
+.area-grafico .titolo-fascia { fill: var(--testo); font-size: 12.5px; font-weight: 600; }
+.area-grafico .media-fascia { fill: var(--tenue); font-size: 12px; font-variant-numeric: tabular-nums; }
+.area-grafico .etichetta-picco { fill: var(--testo); font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.area-grafico .pallino-picco { stroke: var(--superficie); stroke-width: 2; }
+.area-grafico .etichetta-asse { fill: var(--tenue); font-size: 11px; font-variant-numeric: tabular-nums; }
+.area-grafico .linea-mirino { stroke: var(--tenue); stroke-width: 1; }
+/* Anello del colore di fondo: il pallino si stacca dalla linea che copre. */
+.area-grafico .pallino-mirino { stroke: var(--superficie); stroke-width: 2; }
+.riquadro-valori {
+  position: absolute; top: 24px; pointer-events: none; z-index: 2;
+  background: color-mix(in srgb, var(--superficie) 88%, transparent);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  border: 1px solid var(--bordo); border-radius: 12px;
+  padding: 10px 12px; font-size: 0.85rem; min-width: 160px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+}
+.riquadro-valori div { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+.riquadro-valori b { margin-left: auto; font-variant-numeric: tabular-nums; }
+.dati-grafico { margin-top: 6px; font-size: 0.85rem; }
+.dati-grafico summary { cursor: pointer; color: var(--tenue); }
+.dati-grafico table { margin-top: 8px; }
+
+/* ---------- Tabelle (dati, cronologia, sfida) ---------- */
+.grafico table, .tabella { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+.grafico th, .grafico td, .tabella th, .tabella td {
+  text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--bordo); font-size: 0.85rem;
+}
+.grafico th, .tabella th { color: var(--tenue); font-weight: 600; }
+.tabella .tua-riga td { font-weight: 700; color: var(--accento); }
+.scorri { overflow-x: auto; }
+
+/* ---------- Punteggi ---------- */
+.punteggi {
+  margin-top: 32px; background: var(--superficie); border: 1px solid var(--bordo);
+  border-radius: var(--raggio); padding: 20px 24px;
+}
+.punteggi h2 { margin-top: 0; }
+.punteggi .stat { background: var(--sfondo); }
+.colonne-punteggi { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 24px; }
+/* Sotto questa larghezza le due tabelle non stanno affiancate: una sotto l'altra. */
+@media (max-width: 820px) { .colonne-punteggi { grid-template-columns: minmax(0, 1fr); } }
+.colonne-punteggi h3 { margin: 8px 0; font-size: 1rem; }
+.grafico-storico { margin-top: 20px; border-top: 1px solid var(--bordo); padding-top: 12px; }
+.testa-pannello { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.testa-pannello h3 { margin: 0; font-size: 1rem; }
+
+@media (max-width: 640px) {
+  .punteggi { padding: 16px; }
+  .testata { flex-direction: column; }
+}
+
+/* ---------- Telefono e tablet (touch) ---------- */
+.solo-touch { display: none; }
+.riga-ricomincia { justify-content: flex-end; margin: -4px 0 8px; }
+.area-grafico { touch-action: pan-y; } /* trascinare in orizzontale muove il mirino */
+
+@media (hover: none) and (pointer: coarse) {
+  .solo-touch { display: flex; }
+  /* Bersagli da almeno 44 px: le dita sono meno precise del mouse. */
+  .opzione, select, .primario { min-height: 44px; }
+  .opzione { padding: 8px 14px; }
+  .interruttore input[type="checkbox"] { width: 22px; height: 22px; }
+  .opzione.piccola { min-height: 36px; }
+
+  /* Modalità concentrazione: mentre scrivi restano solo tempo, testo e "Ricomincia". */
+  body.in-gioco .testata,
+  body.in-gioco .barra-profilo,
+  body.in-gioco .impostazioni,
+  body.in-gioco .nota-us,
+  body.in-gioco .punteggi { display: none; }
+  body.in-gioco .contenitore { padding-top: 8px; }
+}
+
+/* Conferma di eliminazione del profilo, dentro la pagina. */
+.conferma-elimina {
+  flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 10px 12px; border-radius: 10px;
+  background: var(--sbagliato-sfondo); color: var(--testo);
+}
+.conferma-elimina span { flex: 1 1 220px; min-width: 0; }
+.opzione.pericolo { background: var(--sbagliato); border-color: var(--sbagliato); color: var(--superficie); }

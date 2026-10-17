@@ -1,0 +1,18 @@
+{
+  "name": "Test di digitazione",
+  "short_name": "Digitazione",
+  "description": "Test di velocità di digitazione con frasi di senso compiuto in italiano e inglese.",
+  "lang": "it",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f7f4ee",
+  "theme_color": "#d9622b",
+  "icons": [
+    { "src": "icona-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icona-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icona-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icona.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

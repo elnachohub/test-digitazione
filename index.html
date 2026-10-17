@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Test di digitazione</title>
+  <!-- Installabile sul telefono ("Aggiungi a schermata Home"): vedi manifest e sw.js -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#d9622b">
+  <link rel="icon" href="icona.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icona-180.png">
+  <link rel="stylesheet" href="stile.css">
+</head>
+<body>
+  <main class="contenitore">
+    <!-- I testi con data-t* vengono riempiti da app.js nella lingua scelta (vedi testi.js) -->
+    <header class="testata">
+      <div>
+        <h1 data-t="titolo">Test di digitazione</h1>
+        <p class="sottotitolo" data-t="sottotitolo">Frasi di senso compiuto · tastiera QWERTY</p>
+      </div>
+      <!-- Lingua: cambia frasi E interfaccia. Il mondo dice "da qui cambi lingua". -->
+      <label class="scelta-lingua">
+        <svg class="mondo" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <ellipse cx="12" cy="12" rx="4" ry="9.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M2.5 12h19M4 7h16M4 17h16" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        </svg>
+        <select id="lingua" data-t-aria="ariaMondo">
+          <option value="it">Italiano</option>
+          <option value="en">English</option>
+        </select>
+      </label>
+    </header>
+
+    <!-- Profilo: separa punteggi e cronologia di persone diverse sullo stesso browser -->
+    <section class="barra-profilo" aria-label="Profilo">
+      <label class="interruttore">
+        <span data-t="profilo">Profilo</span>
+        <select id="profilo"></select>
+      </label>
+      <button class="opzione" id="nuovoProfilo" data-t="nuovoProfilo">Nuovo</button>
+      <button class="opzione" id="eliminaProfilo" data-t="eliminaProfilo">Elimina</button>
+      <form id="formProfilo" class="form-profilo" hidden>
+        <input id="nomeProfilo" maxlength="20" autocomplete="off" data-t-placeholder="nomeProfilo" data-t-aria="nomeProfilo">
+        <button class="opzione attiva" data-t="crea">Crea</button>
+        <button class="opzione" type="button" id="annullaProfilo" data-t="annulla">Annulla</button>
+        <span class="errore-nome" id="erroreNome" role="alert"></span>
+      </form>
+      <!-- Conferma dentro la pagina: dove la pagina è incorporata (es. claude.ai)
+           le finestre di conferma del browser non compaiono e il bottone non farebbe nulla. -->
+      <div class="conferma-elimina" id="confermaElimina" role="alertdialog" aria-labelledby="testoConferma" hidden>
+        <span id="testoConferma"></span>
+        <button class="opzione pericolo" id="siElimina" type="button" data-t="eliminaDefinitivo">Elimina per sempre</button>
+        <button class="opzione" id="noElimina" type="button" data-t="annulla">Annulla</button>
+      </div>
+    </section>
+
+    <!-- Impostazioni: ogni cambio fa ripartire il test con frasi nuove -->
+    <section class="impostazioni" aria-label="Impostazioni">
+      <div class="gruppo" role="group">
+        <span class="etichetta" data-t="durata">Durata</span>
+        <button class="opzione" data-durata="30">30 s</button>
+        <button class="opzione" data-durata="60">60 s</button>
+        <button class="opzione" data-durata="120">120 s</button>
+      </div>
+      <div class="gruppo" role="group">
+        <span class="etichetta" data-t="livello">Livello</span>
+        <button class="opzione" data-livello="facile" data-t="facile">Facile</button>
+        <button class="opzione" data-livello="medio" data-t="medio">Medio</button>
+        <button class="opzione" data-livello="difficile" data-t="difficile">Difficile</button>
+      </div>
+      <label class="interruttore">
+        <input type="checkbox" id="punteggiatura">
+        <span data-t="punteggiatura">Maiuscole e punteggiatura</span>
+      </label>
+      <label class="interruttore" id="etichettaAccenti">
+        <input type="checkbox" id="accenti">
+        <span data-t="accenti">Lettere accentate</span>
+      </label>
+      <label class="interruttore">
+        <span data-t="tastiera">Tastiera</span>
+        <select id="layout">
+          <option value="it" data-t="tastieraIt">Italiana</option>
+          <option value="us" data-t="tastieraUs">Americana (US)</option>
+        </select>
+      </label>
+    </section>
+    <p class="nota-us" id="notaUs" data-t-html="notaUs" hidden></p>
+
+    <!-- Statistiche in tempo reale. Niente aria-live qui: cambiano 10 volte al
+         secondo e un lettore di schermo le ripeterebbe di continuo. -->
+    <section class="statistiche" id="statisticheVivo">
+      <div class="stat"><span id="tempo" class="valore">60</span><span class="nome" data-t="secondi">secondi</span></div>
+      <div class="stat"><span id="ppm" class="valore">0</span><span class="nome" data-t="paroleMin">parole/min</span></div>
+      <div class="stat"><span id="bpm" class="valore">0</span><span class="nome" data-t="battuteMin">battute/min</span></div>
+      <div class="stat"><span id="precisione" class="valore">100%</span><span class="nome" data-t="precisione">precisione</span></div>
+    </section>
+
+    <!-- Sul telefono non ci sono Esc né Tab: un bottone per ricominciare mentre scrivi -->
+    <div class="riga-ricomincia solo-touch">
+      <button class="opzione" id="ricominciaTest" type="button">↻ <span data-t="ricominciaTest">Ricomincia</span></button>
+    </div>
+
+    <!-- Testo da copiare. Il campo nascosto riceve i tasti (serve anche su mobile) -->
+    <section class="area-testo" id="areaTesto" tabindex="-1">
+      <div class="finestra"><div class="testo" id="testo"></div></div>
+      <input id="ingresso" class="ingresso" autocomplete="off" autocapitalize="off"
+             autocorrect="off" spellcheck="false" data-t-aria="ariaIngresso">
+      <p class="suggerimento" id="suggerimento" data-t="suggerimento"></p>
+    </section>
+
+    <!-- Risultato finale. tabindex=-1: a fine test il fuoco va qui e non sul
+         bottone, così i tasti premuti per inerzia non lo cancellano. -->
+    <section class="risultato" id="risultato" tabindex="-1" hidden>
+      <h2 data-t="risultato">Risultato</h2>
+      <p class="avviso" id="avvisoSalvataggio" data-t="nonSalvato" hidden></p>
+      <div class="statistiche">
+        <div class="stat"><span id="resPpm" class="valore">0</span><span class="nome" data-t="paroleMin"></span></div>
+        <div class="stat"><span id="resBpm" class="valore">0</span><span class="nome" data-t="battuteMin"></span></div>
+        <div class="stat"><span id="resPrecisione" class="valore">0%</span><span class="nome" data-t="precisione"></span></div>
+        <div class="stat"><span id="resCaratteri" class="valore">0</span><span class="nome" data-t="caratteriGiusti"></span></div>
+        <div class="stat"><span id="resRecord" class="valore">0</span><span class="nome" data-t="record"></span></div>
+      </div>
+
+      <h3 class="titolo-grafico" data-t="andamento">Andamento della sfida</h3>
+      <div class="grafico" id="graficoRisultato"></div>
+
+      <!-- Errori: per tipo e per tasto. Contano anche quelli poi corretti. -->
+      <div class="errori">
+        <div class="tipi-errore">
+          <h3 data-t="erroriPerTipo"></h3>
+          <ul>
+            <li><span class="pallino sbagliato"></span><span data-t="errLettera"></span> <strong id="resErrLettera">0</strong></li>
+            <li><span class="pallino minore"></span><span data-t="errMaiuscola"></span> <strong id="resErrMaiuscola">0</strong></li>
+            <li id="rigaAccento"><span class="pallino minore"></span><span data-t="errAccento"></span> <strong id="resErrAccento">0</strong></li>
+            <li><span class="pallino minore"></span><span data-t="errSpazio"></span> <strong id="resErrSpazio">0</strong></li>
+          </ul>
+          <p class="nota" data-t="notaMinori"></p>
+        </div>
+        <div>
+          <h3 data-t="tastiSbagliati"></h3>
+          <ol class="classifica" id="classifica"></ol>
+        </div>
+      </div>
+      <button class="primario" id="ricomincia"><span data-t="nuovaPartita">Nuova partita</span> <kbd>Tab</kbd></button>
+    </section>
+
+    <!-- Annuncio per i lettori di schermo: riempito solo a fine test -->
+    <div id="annuncio" class="solo-lettori" aria-live="polite"></div>
+
+    <!-- Tastiera QWERTY: evidenzia il prossimo tasto da premere -->
+    <section class="tastiera" id="tastiera" aria-hidden="true"></section>
+
+    <p class="aiuto" data-t-html="aiuto"></p>
+
+    <!-- Punteggi del profilo: riepilogo, cronologia, tabella sfida -->
+    <section class="punteggi" id="punteggi">
+      <h2 id="titoloPunteggi"></h2>
+      <div class="statistiche">
+        <div class="stat"><span id="totTest" class="valore">0</span><span class="nome" data-t="testFatti"></span></div>
+        <div class="stat"><span id="totRecord" class="valore">0</span><span class="nome" data-t="recordModalita"></span></div>
+        <div class="stat"><span id="totMedia" class="valore">—</span><span class="nome" data-t="mediaUltimi"></span></div>
+      </div>
+
+      <div class="colonne-punteggi">
+        <div>
+          <h3 data-t="cronologia"></h3>
+          <p class="nota" id="nessunTest" data-t="nessunTest"></p>
+          <div class="scorri"><table class="tabella" id="tabellaStorico">
+            <thead><tr>
+              <th data-t="data"></th><th data-t="impostazioni"></th>
+              <th data-t="paroleMin"></th><th data-t="precisione"></th><th></th>
+            </tr></thead>
+            <tbody></tbody>
+          </table></div>
+        </div>
+        <div>
+          <h3 data-t="sfida"></h3>
+          <p class="nota" data-t="sfidaNota"></p>
+          <p class="nota" id="nessunaSfida" data-t="nessunaSfida"></p>
+          <div class="scorri"><table class="tabella" id="tabellaSfida">
+            <thead><tr><th>#</th><th data-t="nome"></th><th data-t="paroleMin"></th><th data-t="precisione"></th></tr></thead>
+            <tbody></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- Grafico di un test passato, aperto dalla cronologia -->
+      <div class="grafico-storico" id="pannelloStorico" hidden>
+        <div class="testa-pannello">
+          <h3 id="titoloStorico"></h3>
+          <button class="opzione" id="chiudiStorico" data-t="chiudi">Chiudi</button>
+        </div>
+        <div class="grafico" id="graficoStorico"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="testi.js"></script>
+  <script src="frasi.js"></script>
+  <script src="logica.js"></script>
+  <script src="profili.js"></script>
+  <script src="grafico.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
