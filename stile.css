@@ -410,13 +410,7 @@ select {
   .interruttore input[type="checkbox"] { width: 22px; height: 22px; }
   .opzione.piccola { min-height: 36px; }
 
-  /* Modalità concentrazione: mentre scrivi restano solo tempo, testo e "Ricomincia". */
-  body.in-gioco .testata,
-  body.in-gioco .barra-profilo,
-  body.in-gioco .impostazioni,
-  body.in-gioco .nota-us,
-  body.in-gioco .punteggi { display: none; }
-  body.in-gioco .contenitore { padding-top: 8px; }
+
 }
 
 /* Conferma di eliminazione del profilo, dentro la pagina. */
@@ -705,4 +699,42 @@ select {
 @media (prefers-reduced-motion: no-preference) {
   .chip-livello.cambia { animation: cambiaLivello 0.45s cubic-bezier(.2,1.5,.4,1); }
   @keyframes cambiaLivello { 0% { transform: scale(0.7); opacity: 0.3; } 100% { transform: none; opacity: 1; } }
+}
+
+/*
+ * Modalità concentrazione, su telefono E computer: mentre scrivi restano tempo,
+ * barra arcade, testo e tastiera; titolo, profilo, impostazioni e punteggi
+ * spariscono e ricompaiono a fine partita.
+ */
+body.in-gioco .testata,
+body.in-gioco .barra-profilo,
+body.in-gioco .impostazioni,
+body.in-gioco .nota-us,
+body.in-gioco .punteggi,
+body.in-gioco .legenda-arcade { display: none; }
+body.in-gioco .contenitore { padding-top: 8px; }
+@media (prefers-reduced-motion: no-preference) {
+  /* Quando ricompaiono, lo fanno con una dissolvenza (l'animazione riparte da sola). */
+  .testata, .barra-profilo, .impostazioni, .punteggi { animation: riappare 0.35s ease-out both; }
+  @keyframes riappare { from { opacity: 0; transform: translateY(-4px); } }
+}
+
+/*
+ * Telefono mentre giochi: la tastiera a schermo lascia libera circa metà pagina.
+ * - Le quattro statistiche stanno su una riga sola e compatta, così il testo
+ *   sale e resta sopra la tastiera.
+ * - Spazio vuoto sotto la zona di gioco: senza, la pagina (accorciata dalla
+ *   modalità concentrazione) non potrebbe scorrere fino a portare il testo in vista.
+ */
+@media (max-width: 640px) {
+  body.in-gioco #statisticheVivo { gap: 6px; margin-bottom: 6px; flex-wrap: nowrap; }
+  body.in-gioco #statisticheVivo .stat { flex: 1 1 0; padding: 6px 8px; }
+  body.in-gioco #statisticheVivo .valore { font-size: 1.1rem; }
+  body.in-gioco #statisticheVivo .nome { font-size: 0.62rem; }
+  body.in-gioco .riga-ricomincia { margin: 0 0 6px; }
+  body.in-gioco .hud-arcade { padding: 8px 12px; margin-bottom: 8px; }
+  body.in-gioco .hud-numeri { margin-top: 6px; gap: 4px 16px; }
+}
+@media (hover: none) and (pointer: coarse) {
+  body.in-gioco .contenitore { padding-bottom: 70vh; }
 }

@@ -337,6 +337,9 @@ function animaNumero(elemento, valore, formato = (n) => String(n)) {
     if (p < 1) conteggi.set(elemento, requestAnimationFrame(passo));
   };
   conteggi.set(elemento, requestAnimationFrame(passo));
+  // Rete di sicurezza: se il browser non anima (scheda in pausa, risparmio
+  // energetico), il numero giusto compare comunque a fine conteggio.
+  setTimeout(() => { if (Number(elemento.dataset.valore) === valore) elemento.textContent = formato(valore); }, DURATA_CONTEGGIO + 50);
 }
 
 function scorriAlCursore() {
@@ -723,27 +726,75 @@ function pulisciMappaErrori() {
 const eTouch = () => matchMedia("(hover: none) and (pointer: coarse)").matches;
 
 /*
- * Porta tempo e testo in cima allo schermo. Sul telefono la tastiera a schermo
- * copre metà pagina: senza questo, il testo da copiare potrebbe finirci sotto.
- * Si aspetta che la tastiera finisca di aprirsi (la sua animazione dura ~300 ms).
+ * Inquadra la zona di gioco: tempo, barra arcade, testo e (sul computer) la
+ * tastiera disegnata, tutti visibili insieme senza doverli cercare.
+ *
+ * Sul telefono si usa la parte di schermo che la tastiera a schermo lascia
+ * libera (visualViewport): la tastiera si apre con un'animazione di ~300 ms,
+ * quindi si aspetta che finisca e si ricalcola quando cambia l'area visibile.
+ * Se la zona non ci sta tutta, la priorità va al testo da copiare.
  */
 const ATTESA_TASTIERA = 300;
-function mostraTestoSopraTastiera() {
-  if (!eTouch()) return;
-  setTimeout(() => el.statisticheVivo.scrollIntoView({ block: "start", behavior: "smooth" }), ATTESA_TASTIERA);
+// Spazio lasciato libero sopra la zona di gioco, per non attaccarla al bordo (px).
+const MARGINE_VISTA = 10;
+
+/*
+ * Come scorrere: morbido sul computer; immediato su touch (mentre la tastiera
+ * del telefono si apre, il browser fa i suoi spostamenti e uno scorrimento
+ * morbido viene interrotto o non parte) e per chi chiede movimento ridotto.
+ */
+const modoScorrimento = () => (movimentoRidotto() || eTouch() ? "auto" : "smooth");
+
+function inquadraGioco() {
+  if (el.areaTesto.hidden) return;
+  const vista = window.visualViewport;
+  const altezza = vista ? vista.height : innerHeight;
+  const spostamentoVista = vista ? vista.offsetTop : 0; // iOS: l'area visibile può essere spostata
+  const r = (e) => e.getBoundingClientRect();
+  const alto = r(el.statisticheVivo).top;
+  const conTastiera = el.tastiera.offsetParent !== null && getComputedStyle(el.tastiera).display !== "none";
+  const basso = conTastiera ? r(el.tastiera).bottom : r(el.areaTesto).bottom;
+  const ciSta = basso - alto <= altezza - 2 * MARGINE_VISTA;
+  let delta;
+  if (ciSta) {
+    // Ci sta tutto: si parte dal tempo.
+    delta = alto - spostamentoVista - MARGINE_VISTA;
+  } else {
+    // Non ci sta: il fondo (tastiera o testo) va sul fondo dello schermo, così
+    // sopra si vede il più possibile (tempo, barra arcade). Se però così il
+    // testo resterebbe tagliato in alto, si porta il testo in cima.
+    delta = basso - (spostamentoVista + altezza - MARGINE_VISTA);
+    if (r(el.areaTesto).top - delta < spostamentoVista + MARGINE_VISTA) {
+      delta = r(el.areaTesto).top - spostamentoVista - MARGINE_VISTA;
+    }
+  }
+  if (Math.abs(delta) < 2) return; // già a posto
+  window.scrollBy({ top: delta, behavior: modoScorrimento() });
+}
+
+/* Chiude la legenda arcade senza cambiare la preferenza dell'utente: si sta per giocare. */
+function chiudiLegendaPerGiocare() {
+  if (eArcade()) el.legendaArcade.open = false;
+}
+
+/* Il giocatore ha scelto di cominciare (clic o tocco sul testo): niente da cercare. */
+function preparaPerScrivere() {
+  chiudiLegendaPerGiocare();
+  if (eTouch()) setTimeout(inquadraGioco, ATTESA_TASTIERA);
+  else inquadraGioco();
 }
 
 function avviaTimer() {
   stato.inizio = performance.now();
-  if (eArcade()) {
-    stato.scadenza = stato.inizio + ARCADE.TEMPO_INIZIALE;
-    // Si gioca: la legenda si chiude per non distrarre (la preferenza non cambia).
-    el.legendaArcade.open = false;
-  }
-  // Modalità concentrazione: sul telefono, mentre scrivi, si nasconde tutto
-  // tranne tempo, testo e "Ricomincia" (le regole sono in stile.css).
+  if (eArcade()) stato.scadenza = stato.inizio + ARCADE.TEMPO_INIZIALE;
+  // Si gioca: la legenda si chiude per non distrarre (la preferenza non cambia).
+  chiudiLegendaPerGiocare();
+  // Modalità concentrazione (telefono E computer): mentre scrivi spariscono
+  // titolo, profilo, impostazioni e punteggi (regole in stile.css). La pagina
+  // si accorcia, quindi si reinquadra subito la zona di gioco (leggere le
+  // posizioni obbliga il browser a ricalcolare l'impaginazione: niente attese).
   document.body.classList.add("in-gioco");
-  mostraTestoSopraTastiera();
+  inquadraGioco();
   stato.timer = setInterval(aggiornaStatistiche, INTERVALLO_AGGIORNAMENTO);
   el.suggerimento.hidden = true;
 }
@@ -810,15 +861,22 @@ function termina() {
   mostraPunteggi();
   // Il fuoco va sul riquadro, NON sul bottone: altrimenti uno spazio o un Invio
   // digitati per inerzia lo premerebbero e il risultato sparirebbe.
-  el.risultato.focus();
+  // preventScroll: lo scorrimento lo decidiamo noi, per mostrare il risultato dall'inizio.
+  el.risultato.focus({ preventScroll: true });
+  window.scrollBy({ top: el.risultato.getBoundingClientRect().top - MARGINE_VISTA, behavior: modoScorrimento() });
   // Per chi usa un lettore di schermo: un solo annuncio, a fine test.
   el.annuncio.textContent = eArcade()
     ? t("annuncioArcade", { punti: stato.punteggio, frasi: stato.frasiCompletate })
     : t("annuncio", { ppm, prec: precisione });
 }
 
-/* Riporta tutto allo stato iniziale con frasi nuove. */
-function ricomincia() {
+/*
+ * Riporta tutto allo stato iniziale con frasi nuove.
+ * perGiocare = true quando è il giocatore a chiedere una nuova partita (Tab,
+ * Esc, bottoni): allora la vista si reinquadra sulla zona di gioco. Un cambio
+ * di impostazione invece non sposta la pagina (stai usando le impostazioni).
+ */
+function ricomincia(perGiocare = false) {
   clearInterval(stato.timer);
   document.body.classList.remove("in-gioco");
   stato = statoIniziale();
@@ -830,11 +888,12 @@ function ricomincia() {
   allungaTesto(MARGINE_TESTO * 3);
   coloraIntervallo(0, 0);
   el.testo.appendChild(caret);
-  requestAnimationFrame(posizionaCaret); // dopo che il testo è stato impaginato
+  posizionaCaret(); // offsetLeft/offsetTop fanno impaginare il testo appena aggiunto
   el.tempo.textContent = durataMs() / 1000;
   el.popupZona.textContent = "";
-  // A partita ferma la legenda si riapre, a meno che l'utente l'abbia chiusa lui.
-  el.legendaArcade.open = !impostazioni.legendaChiusa;
+  // A partita ferma la legenda si riapre, a meno che l'utente l'abbia chiusa lui
+  // o che stia già per scrivere (nuova partita con Tab: il cursore è nel testo).
+  el.legendaArcade.open = !impostazioni.legendaChiusa && !perGiocare;
   el.arcPunti.dataset.valore = 0;
   delete el.arcLivello.dataset.livello; // così l'etichetta si ridisegna con la nuova partita
   aggiornaHud();
@@ -850,6 +909,9 @@ function ricomincia() {
   // schermo da soli coprirebbe metà pagina e farebbe scorrere tutto; si apre
   // quando tocchi il testo (o resta aperta se lo era già).
   if (!eTouch()) el.ingresso.focus();
+  // Nuova partita mentre si sta giocando (Tab o "Ricomincia"): i pannelli sono
+  // ricomparsi e la pagina si è allungata: si rimette a posto la vista.
+  if (perGiocare) inquadraGioco();
 }
 
 /* ---------- Ingresso dei tasti ---------- */
@@ -989,10 +1051,11 @@ function lampeggia(evento) {
 
 /* ---------- Collegamento degli eventi ---------- */
 
+const nuovaPartita = () => ricomincia(true);
 el.ingresso.addEventListener("input", suInput);
 el.ingresso.addEventListener("compositionend", () => suInput());
 el.ingresso.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") { ricomincia(); return; } // durante il test: ricomincia subito
+  if (e.key === "Escape") { nuovaPartita(); return; } // durante il test: ricomincia subito
   // Frecce/Home/Fine sposterebbero il cursore in mezzo al testo scritto.
   if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(e.key)) e.preventDefault();
   lampeggia(e);
@@ -1015,19 +1078,22 @@ if (typeof ResizeObserver !== "undefined") {
 }
 
 // Cliccando sul riquadro del testo si torna a scrivere.
-el.areaTesto.addEventListener("click", () => el.ingresso.focus());
+el.areaTesto.addEventListener("click", () => { el.ingresso.focus(); preparaPerScrivere(); });
 el.areaTesto.addEventListener("focusin", () => el.areaTesto.classList.add("a-fuoco"));
 el.areaTesto.addEventListener("focusout", () => el.areaTesto.classList.remove("a-fuoco"));
 
-el.ricomincia.addEventListener("click", ricomincia);
-el.ricominciaTest.addEventListener("click", ricomincia);
+el.ricomincia.addEventListener("click", nuovaPartita);
+el.ricominciaTest.addEventListener("click", nuovaPartita);
 // Toccare "Ricomincia" non deve togliere il fuoco al testo: la tastiera del
 // telefono resta aperta e si può ripartire subito a scrivere.
 el.ricominciaTest.addEventListener("pointerdown", (e) => e.preventDefault());
-el.ingresso.addEventListener("focus", mostraTestoSopraTastiera);
+// Solo un clic o un tocco del giocatore sposta la vista (vedi preparaPerScrivere):
+// il cursore messo nel testo all'apertura del sito non deve far scorrere la pagina.
 // Quando la tastiera del telefono si apre o si chiude cambia l'area visibile.
 if (window.visualViewport) {
-  visualViewport.addEventListener("resize", () => { if (document.activeElement === el.ingresso) mostraTestoSopraTastiera(); });
+  visualViewport.addEventListener("resize", () => {
+    if (document.activeElement === el.ingresso && eTouch()) setTimeout(inquadraGioco, ATTESA_TASTIERA);
+  });
 }
 
 /*
@@ -1041,7 +1107,7 @@ document.addEventListener("keydown", (e) => {
   const sulRisultato = stato.finito && (el.risultato.contains(attivo) || attivo === document.body);
   if (attivo === el.ingresso || sulRisultato) {
     e.preventDefault();
-    ricomincia();
+    nuovaPartita();
   }
 });
 
