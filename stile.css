@@ -21,6 +21,7 @@
   --serie-errori: #eb6834;
   --serie-fluidita: #1baf7a;
   --ok: #2f8f4e; /* parola perfetta */
+  --segmento-attivo: #ffffff; /* opzione scelta in un selettore a segmenti: più chiara della pillola */
   --raggio: 12px;
   color-scheme: light;
 }
@@ -52,6 +53,7 @@
     --serie-errori: #d95926;
     --serie-fluidita: #199e70;
     --ok: #4cbb6c;
+    --segmento-attivo: #48453f;
     color-scheme: dark;
   }
 }
@@ -76,6 +78,7 @@
   --serie-errori: #d95926;
   --serie-fluidita: #199e70;
   --ok: #4cbb6c;
+  --segmento-attivo: #48453f;
   color-scheme: dark;
 }
 
@@ -165,8 +168,16 @@ body {
 .testo .spazio.sbagliato { text-decoration: underline wavy var(--sbagliato); }
 /* Errori minori (maiuscola o spazio): giallo, non rosso. */
 .testo .minore { color: var(--minore); background: var(--minore-sfondo); }
-.testo .cursore { box-shadow: inset 2px 0 0 var(--accento); animation: lampeggio 1s step-end infinite; }
-@keyframes lampeggio { 50% { box-shadow: none; } }
+/* Cursore: una stanghetta sola che scorre sulla lettera da scrivere (vedi posizionaCaret). */
+.caret {
+  position: absolute; left: 0; top: 0; width: 2px; border-radius: 2px;
+  background: var(--accento); pointer-events: none;
+  transition: transform 90ms ease-out, height 90ms ease-out;
+}
+.caret.fermo { animation: lampeggio 1.05s ease-in-out infinite; }
+@keyframes lampeggio { 0%, 45% { opacity: 1; } 55%, 100% { opacity: 0; } }
+/* Le lettere passano dal grigio al colore giusto con una dissolvenza breve. */
+.testo span { transition: color 120ms ease, background-color 120ms ease; }
 
 /* Il campo vero è invisibile ma resta focalizzabile (anche su mobile). */
 .ingresso {
@@ -483,3 +494,215 @@ select {
 .numeri-arcade div { display: flex; flex-direction: column; align-items: center; min-width: 0; }
 .numeri-arcade strong { font-size: 1.4rem; font-variant-numeric: tabular-nums; }
 .numeri-arcade span { color: var(--tenue); font-size: 0.8rem; }
+
+/* ---------- Legenda dell'arcade ---------- */
+.legenda-arcade { margin-top: 10px; border-top: 1px solid var(--bordo); padding-top: 8px; }
+.legenda-arcade summary { cursor: pointer; color: var(--tenue); font-size: 0.9rem; font-weight: 600; width: fit-content; }
+.legenda-arcade summary:focus-visible { outline: 2px solid var(--accento); outline-offset: 2px; border-radius: 4px; }
+.legenda-arcade dl {
+  display: grid; grid-template-columns: max-content minmax(0, 1fr);
+  gap: 6px 14px; margin: 10px 0 2px; font-size: 0.88rem; align-items: baseline;
+}
+.legenda-arcade dt { display: flex; align-items: baseline; gap: 8px; font-weight: 600; }
+.legenda-arcade dd { margin: 0; color: var(--tenue); }
+/* Etichette con gli stessi colori delle scritte che compaiono in partita. */
+.chip {
+  display: inline-block; min-width: 3.2em; text-align: center; padding: 1px 6px;
+  border-radius: 999px; font-size: 0.8rem; font-weight: 800; font-variant-numeric: tabular-nums;
+  border: 1px solid currentColor;
+}
+.chip.tempo { color: var(--ok); }
+.chip.punti { color: var(--accento); }
+.chip.molt { color: var(--serie-velocita); }
+.chip.errore { color: var(--sbagliato); }
+.chip.livello { color: var(--tenue); }
+/* Telefono stretto: una riga sotto l'altra (titolo, poi spiegazione). */
+@media (max-width: 480px) {
+  .legenda-arcade dl { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .legenda-arcade dd { margin-bottom: 6px; }
+}
+/* Sul telefono, mentre giochi, la legenda sparisce del tutto (resta lo spazio per il testo). */
+@media (hover: none) and (pointer: coarse) {
+  body.in-gioco .legenda-arcade { display: none; }
+}
+
+/* ---------- Animazioni (solo se il sistema non chiede movimento ridotto) ---------- */
+.opzione, .primario, select, .scelta-lingua { transition: background-color 0.15s, border-color 0.15s, transform 0.12s, box-shadow 0.15s; }
+.opzione:hover:not(:disabled), select:hover { border-color: var(--accento); }
+.primario:hover { box-shadow: 0 6px 18px color-mix(in srgb, var(--accento) 35%, transparent); }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* La pagina compare con una dissolvenza leggera. */
+  .contenitore { animation: entraPagina 0.45s ease-out both; }
+  @keyframes entraPagina { from { opacity: 0; transform: translateY(6px); } }
+
+  /* Bottoni: si "premono". */
+  .opzione:active:not(:disabled), .primario:active { transform: scale(0.96); }
+
+  /* Lettera sbagliata: piccola scossa del riquadro. */
+  .area-testo.scossa { animation: scossa 0.22s ease-in-out; }
+  @keyframes scossa { 20% { transform: translateX(-3px); } 40% { transform: translateX(3px); } 60% { transform: translateX(-2px); } 80% { transform: translateX(1px); } }
+
+  /* Frase completata: il riquadro brilla (più forte se perfetta). */
+  .area-testo.frase-ok { animation: brilla 0.6s ease-out; --colore-brillo: var(--ok); }
+  .area-testo.frase-perfetta { animation: brilla 0.9s ease-out; --colore-brillo: var(--accento); }
+  @keyframes brilla {
+    0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--colore-brillo) 55%, transparent); }
+    100% { box-shadow: 0 0 0 14px color-mix(in srgb, var(--colore-brillo) 0%, transparent); }
+  }
+
+  /* Arcade: la barra si allunga morbida e lampeggia di verde quando guadagni tempo. */
+  .barra-tempo .riempimento { transition: width 0.35s cubic-bezier(.2,.8,.2,1), background-color 0.3s; }
+  .barra-tempo .riempimento.guadagno { animation: guadagno 0.7s ease-out; }
+  @keyframes guadagno { 0% { background-color: var(--ok); box-shadow: 0 0 12px var(--ok); } 100% { box-shadow: 0 0 0 transparent; } }
+
+  /* Moltiplicatore che sale: balzo luminoso; perso: trema e si spegne. */
+  #arcMolt.balzo { animation: balzo 0.55s cubic-bezier(.2,1.6,.4,1); }
+  @keyframes balzo { 0% { transform: scale(1); } 40% { transform: scale(1.6) rotate(-6deg); text-shadow: 0 0 14px var(--accento); } 100% { transform: scale(1.12); } }
+  #arcMolt.rotto { animation: rotto 0.45s ease-out; }
+  @keyframes rotto { 0%, 100% { transform: none; } 25% { transform: translateX(-4px) rotate(-4deg); color: var(--sbagliato); } 50% { transform: translateX(4px) rotate(4deg); color: var(--sbagliato); } 75% { transform: translateX(-2px); } }
+  .hud-arcade.lampo-molt { animation: lampoHud 0.7s ease-out; }
+  @keyframes lampoHud { 0% { border-color: var(--serie-velocita); box-shadow: 0 0 0 4px color-mix(in srgb, var(--serie-velocita) 30%, transparent); } }
+
+  /* Coriandoli della frase perfetta (direzione e rotazione dalle variabili --dx, --dy, --giro). */
+  .coriandolo {
+    position: absolute; right: 30px; top: 12px; width: 7px; height: 10px; border-radius: 2px;
+    animation: coriandolo 0.85s cubic-bezier(.15,.7,.3,1) forwards;
+  }
+  @keyframes coriandolo {
+    0% { transform: translate(0, 0) rotate(0); opacity: 1; }
+    100% { transform: translate(var(--dx), calc(var(--dy) + 40px)) rotate(var(--giro)); opacity: 0; }
+  }
+
+  /* Risultato: i blocchi entrano uno dopo l'altro. */
+  .risultato.entra > * { animation: entraBlocco 0.45s ease-out both; }
+  .risultato.entra > :nth-child(2) { animation-delay: 0.05s; }
+  .risultato.entra > :nth-child(3) { animation-delay: 0.1s; }
+  .risultato.entra > :nth-child(4) { animation-delay: 0.15s; }
+  .risultato.entra > :nth-child(5) { animation-delay: 0.2s; }
+  .risultato.entra > :nth-child(6) { animation-delay: 0.25s; }
+  .risultato.entra > :nth-child(n+7) { animation-delay: 0.3s; }
+  @keyframes entraBlocco { from { opacity: 0; transform: translateY(10px); } }
+  .risultato.entra .punteggio-finale strong { animation: punteggioEntra 0.7s cubic-bezier(.2,1.4,.4,1) both; }
+  @keyframes punteggioEntra { from { transform: scale(0.6); opacity: 0; } }
+}
+
+/* ---------- Zona delle scelte: profilo e impostazioni ---------- */
+/* Etichetta piccola sopra ogni gruppo. */
+.etichetta-imp {
+  display: block; margin-bottom: 6px;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--tenue);
+}
+.icona { width: 15px; height: 15px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.opzione { display: inline-flex; align-items: center; gap: 6px; }
+
+/* Profilo: cerchio con l'iniziale, menu, azioni. */
+.barra-profilo { justify-content: space-between; }
+.scheda-profilo { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.avatar {
+  width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+  display: grid; place-items: center; font-weight: 800; font-size: 1.05rem; color: #fff;
+  background: linear-gradient(135deg, var(--accento), color-mix(in srgb, var(--accento) 55%, var(--serie-velocita)));
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--accento) 35%, transparent);
+}
+.campo-profilo { display: flex; flex-direction: column; min-width: 0; }
+.campo-profilo .etichetta-imp { margin-bottom: 2px; }
+.azioni-profilo { display: flex; gap: 6px; }
+
+/* Menu a tendina con una freccia disegnata (colori dai token, quindi giusti in chiaro e scuro). */
+.menu { position: relative; display: inline-flex; max-width: 100%; }
+.menu select {
+  -webkit-appearance: none; appearance: none; max-width: 100%;
+  padding: 7px 34px 7px 12px; border-radius: 999px; font-weight: 600; cursor: pointer;
+  border: 1px solid var(--bordo); background: var(--superficie); color: var(--testo);
+}
+.menu::after {
+  content: ""; position: absolute; right: 14px; top: 50%; width: 7px; height: 7px; pointer-events: none;
+  border-right: 2px solid var(--tenue); border-bottom: 2px solid var(--tenue);
+  transform: translateY(-70%) rotate(45deg);
+}
+.menu select:focus-visible { outline: 2px solid var(--accento); outline-offset: 2px; }
+
+/* Impostazioni: un riquadro con i gruppi affiancati che vanno a capo. */
+.impostazioni {
+  display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: flex-start;
+  gap: 14px 28px; padding: 14px 18px;
+  background: var(--superficie); border: 1px solid var(--bordo); border-radius: var(--raggio);
+}
+.gruppo-imp { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+
+/* Selettore a segmenti: una pillola con le opzioni dentro; quella scelta è in rilievo. */
+.segmentato {
+  display: inline-flex; gap: 2px; padding: 3px; max-width: 100%;
+  background: var(--tasto); border: 1px solid var(--bordo); border-radius: 999px;
+}
+.segmento {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 6px 14px; border: 0; border-radius: 999px; background: transparent;
+  font: inherit; font-weight: 600; white-space: nowrap; color: var(--tenue); cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.12s;
+}
+.segmento:hover { color: var(--testo); }
+.segmento.attiva {
+  background: var(--segmento-attivo); color: var(--accento);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14), 0 3px 10px rgba(0, 0, 0, 0.08);
+}
+.segmento:focus-visible { outline: 2px solid var(--accento); outline-offset: 1px; }
+@media (prefers-reduced-motion: no-preference) {
+  .segmento:active { transform: scale(0.95); }
+}
+
+/* Interruttori a scorrimento al posto delle caselle. */
+.interruttori { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; min-height: 40px; }
+.interruttore { color: var(--testo); }
+.interruttore input[type="checkbox"] {
+  -webkit-appearance: none; appearance: none; margin: 0; flex-shrink: 0; cursor: pointer;
+  position: relative; width: 36px; height: 20px; border-radius: 999px;
+  background: var(--bordo); transition: background-color 0.2s;
+}
+.interruttore input[type="checkbox"]::after {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--superficie); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.22s cubic-bezier(.3, 1.4, .5, 1);
+}
+.interruttore input[type="checkbox"]:checked { background: var(--accento); }
+.interruttore input[type="checkbox"]:checked::after { transform: translateX(16px); }
+.interruttore input[type="checkbox"]:focus-visible { outline: 2px solid var(--accento); outline-offset: 2px; }
+.interruttore input[type="checkbox"]:disabled { cursor: not-allowed; }
+
+/* Schermi bassi: tutto un po' più compatto. */
+@media (max-height: 760px) {
+  .impostazioni { padding: 10px 14px; gap: 10px 22px; }
+  .segmento { padding: 4px 11px; }
+  .etichetta-imp { margin-bottom: 4px; }
+}
+/* Telefono stretto: ogni gruppo su tutta la larghezza, segmenti che si dividono lo spazio. */
+@media (max-width: 480px) {
+  .gruppo-imp { flex: 1 1 100%; align-items: stretch; }
+  /* Il menu a tutta larghezza, con la freccia dentro il riquadro. */
+  .gruppo-imp .menu, .gruppo-imp .menu select { width: 100%; }
+  .segmentato { display: flex; width: 100%; }
+  .segmento { flex: 1 1 0; padding: 7px 8px; }
+  .impostazioni { padding: 12px 14px; }
+}
+/* Dita: bersagli più grandi. */
+@media (hover: none) and (pointer: coarse) {
+  .segmento { min-height: 40px; }
+  .interruttore input[type="checkbox"] { width: 44px; height: 26px; }
+  .interruttore input[type="checkbox"]::after { width: 22px; height: 22px; }
+  .interruttore input[type="checkbox"]:checked::after { transform: translateX(18px); }
+}
+
+/* Difficoltà della frase in corso (arcade): verde, gialla, rossa. */
+.chip-livello {
+  display: inline-block; padding: 2px 10px; border-radius: 999px; font-weight: 800; font-size: 0.85rem;
+  border: 1px solid currentColor;
+}
+.chip-livello[data-livello="facile"] { color: var(--ok); }
+.chip-livello[data-livello="medio"] { color: var(--minore); }
+.chip-livello[data-livello="difficile"] { color: var(--sbagliato); }
+@media (prefers-reduced-motion: no-preference) {
+  .chip-livello.cambia { animation: cambiaLivello 0.45s cubic-bezier(.2,1.5,.4,1); }
+  @keyframes cambiaLivello { 0% { transform: scale(0.7); opacity: 0.3; } 100% { transform: none; opacity: 1; } }
+}

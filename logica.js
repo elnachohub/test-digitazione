@@ -217,18 +217,29 @@ function serieParole(modello, scritto, posizioniErrate) {
  * più lunghe, non lo rallentano. L'abilità decide quanto dura la partita.
  */
 const ARCADE = {
-  TEMPO_INIZIALE: 30000,
+  // Tempo iniziale: 45 s (17/10/2026, prima 30 s: troppo poco per ambientarsi).
+  TEMPO_INIZIALE: 45000,
   // Il tempo accumulato non supera 60 s: anche chi va fortissimo resta sotto pressione.
   TEMPO_MASSIMO: 60000,
   // Ogni frase completata vale 1 s ogni 10 caratteri (minimo 1 s).
   CARATTERI_PER_SECONDO: 10,
   BONUS_FRASE_PERFETTA: 3000,
   PUNTI_FRASE_PERFETTA: 50,
-  // Parole perfette di fila per passare a ×2, ×3, ×4.
-  SOGLIE_SERIE: [10, 25, 50],
-  // Le prime frasi sono facili, poi medie, poi difficili.
+  // Parole perfette di fila per passare a ×2, ×3, ×4. Abbassate da 10/25/50
+  // (17/10/2026): ×4 richiedeva ~7 frasi senza errori, quasi irraggiungibile.
+  // Ora ×2 arriva già nella prima frase e ×4 dopo due o tre frasi pulite.
+  SOGLIE_SERIE: [5, 12, 20],
+  // Fasi della partita: fino alla frase FRASI_FACILI si scalda, fino a
+  // FRASI_MEDIE si fa sul serio, poi si spinge.
   FRASI_FACILI: 4,
   FRASI_MEDIE: 12,
+  // Difficoltà semi-casuale: in ogni fase ogni frase è estratta con queste
+  // probabilità (facile, medio, difficile). La tendenza sale, ma ci sono sorprese.
+  PROBABILITA_LIVELLI: [
+    { facile: 0.8, medio: 0.2, difficile: 0 },     // frasi 1–4: riscaldamento
+    { facile: 0.2, medio: 0.65, difficile: 0.15 }, // frasi 5–12
+    { facile: 0, medio: 0.35, difficile: 0.65 },   // dalla 13ª
+  ],
 };
 
 /* Moltiplicatore dei punti per una serie di parole perfette di fila (×1…×4). */
@@ -261,11 +272,27 @@ function nuovaScadenza(scadenza, adesso, guadagnoMs) {
   return Math.min(scadenza + guadagnoMs, adesso + ARCADE.TEMPO_MASSIMO);
 }
 
-/* Livello della n-esima frase della partita (0 = la prima). */
-function livelloArcade(indiceFrase) {
-  if (indiceFrase < ARCADE.FRASI_FACILI) return "facile";
-  if (indiceFrase < ARCADE.FRASI_MEDIE) return "medio";
-  return "difficile";
+/* Fase della partita per la n-esima frase (0 = la prima): 0, 1 o 2. */
+function faseArcade(indiceFrase) {
+  if (indiceFrase < ARCADE.FRASI_FACILI) return 0;
+  if (indiceFrase < ARCADE.FRASI_MEDIE) return 1;
+  return 2;
+}
+
+/*
+ * Livello della n-esima frase, estratto a caso con le probabilità della sua fase.
+ * La prima frase è sempre facile: si parte tranquilli.
+ * caso: generatore in [0, 1); sostituibile nei test per risultati ripetibili.
+ */
+function livelloArcade(indiceFrase, caso = Math.random) {
+  if (indiceFrase === 0) return "facile";
+  const probabilita = ARCADE.PROBABILITA_LIVELLI[faseArcade(indiceFrase)];
+  let estratto = caso();
+  for (const livello of ["facile", "medio", "difficile"]) {
+    if (estratto < probabilita[livello]) return livello;
+    estratto -= probabilita[livello];
+  }
+  return "difficile"; // arrotondamenti: le probabilità sommano a 1
 }
 
 /* ---------- Andamento nel tempo (per il grafico) ---------- */
@@ -359,6 +386,6 @@ if (typeof module !== "undefined") {
     classificaErrore, eMinore, tastoDellErrore, contaGiusti, calcolaStatistiche,
     chiaveRecord, tastiPerCarattere, senzaAccenti, PESO_ERRORE_MINORE,
     fluidita, serieDelTest, differenzaInput, eSegnoProvvisorio, serieParole,
-    ARCADE, moltiplicatore, serieDopoErrore, premioFrase, nuovaScadenza, livelloArcade,
+    ARCADE, moltiplicatore, serieDopoErrore, premioFrase, nuovaScadenza, livelloArcade, faseArcade,
   };
 }

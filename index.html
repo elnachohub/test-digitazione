@@ -34,13 +34,23 @@
     </header>
 
     <!-- Profilo: separa punteggi e cronologia di persone diverse sullo stesso browser -->
+    <!-- Profilo: separa punteggi e cronologia di persone diverse sullo stesso browser -->
     <section class="barra-profilo" aria-label="Profilo">
-      <label class="interruttore">
-        <span data-t="profilo">Profilo</span>
-        <select id="profilo"></select>
-      </label>
-      <button class="opzione" id="nuovoProfilo" data-t="nuovoProfilo">Nuovo</button>
-      <button class="opzione" id="eliminaProfilo" data-t="eliminaProfilo">Elimina</button>
+      <div class="scheda-profilo">
+        <!-- Cerchio con l'iniziale del profilo attivo (lo riempie app.js) -->
+        <span class="avatar" id="avatarProfilo" aria-hidden="true"></span>
+        <label class="campo-profilo">
+          <span class="etichetta-imp" data-t="profilo">Profilo</span>
+          <span class="menu"><select id="profilo"></select></span>
+        </label>
+      </div>
+      <div class="azioni-profilo">
+        <button class="opzione" id="nuovoProfilo" type="button">
+          <svg class="icona" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10" /></svg>
+          <span data-t="nuovoProfilo">Nuovo</span>
+        </button>
+        <button class="opzione" id="eliminaProfilo" type="button" data-t="eliminaProfilo">Elimina</button>
+      </div>
       <form id="formProfilo" class="form-profilo" hidden>
         <input id="nomeProfilo" maxlength="20" autocomplete="off" data-t-placeholder="nomeProfilo" data-t-aria="nomeProfilo">
         <button class="opzione attiva" data-t="crea">Crea</button>
@@ -56,41 +66,62 @@
       </div>
     </section>
 
-    <!-- Impostazioni: ogni cambio fa ripartire il test con frasi nuove -->
+    <!-- Impostazioni: ogni cambio fa ripartire il test con frasi nuove.
+         Ogni gruppo ha un'etichetta sopra; le scelte a più opzioni sono "selettori
+         a segmenti" (una pillola con le opzioni dentro, quella scelta in rilievo). -->
     <section class="impostazioni" aria-label="Impostazioni">
       <!-- Modalità: classica (durata fissa) o arcade (il tempo si guadagna) -->
-      <div class="gruppo" role="group">
-        <span class="etichetta" data-t="modalita">Modalità</span>
-        <button class="opzione" data-modalita="classica" data-t="classica">Classica</button>
-        <button class="opzione" data-modalita="arcade" data-t="arcade">Arcade</button>
+      <div class="gruppo-imp">
+        <span class="etichetta-imp" id="etModalita" data-t="modalita">Modalità</span>
+        <div class="segmentato" role="group" aria-labelledby="etModalita">
+          <button class="segmento" type="button" data-modalita="classica">
+            <svg class="icona" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" /><path d="M8 4.5V8l2.5 1.5" /></svg>
+            <span data-t="classica">Classica</span>
+          </button>
+          <button class="segmento" type="button" data-modalita="arcade">
+            <svg class="icona" viewBox="0 0 16 16" aria-hidden="true"><path d="M9 1.5 3.5 9H8l-1 5.5L12.5 7H8z" /></svg>
+            <span data-t="arcade">Arcade</span>
+          </button>
+        </div>
       </div>
-      <div class="gruppo" role="group" id="gruppoDurata">
-        <span class="etichetta" data-t="durata">Durata</span>
-        <button class="opzione" data-durata="30">30 s</button>
-        <button class="opzione" data-durata="60">60 s</button>
-        <button class="opzione" data-durata="120">120 s</button>
+      <div class="gruppo-imp" id="gruppoDurata">
+        <span class="etichetta-imp" id="etDurata" data-t="durata">Durata</span>
+        <div class="segmentato" role="group" aria-labelledby="etDurata">
+          <button class="segmento" type="button" data-durata="30">30 s</button>
+          <button class="segmento" type="button" data-durata="60">60 s</button>
+          <button class="segmento" type="button" data-durata="120">120 s</button>
+        </div>
       </div>
-      <div class="gruppo" role="group" id="gruppoLivello">
-        <span class="etichetta" data-t="livello">Livello</span>
-        <button class="opzione" data-livello="facile" data-t="facile">Facile</button>
-        <button class="opzione" data-livello="medio" data-t="medio">Medio</button>
-        <button class="opzione" data-livello="difficile" data-t="difficile">Difficile</button>
+      <div class="gruppo-imp" id="gruppoLivello">
+        <span class="etichetta-imp" id="etLivello" data-t="livello">Livello</span>
+        <div class="segmentato" role="group" aria-labelledby="etLivello">
+          <button class="segmento" type="button" data-livello="facile" data-t="facile">Facile</button>
+          <button class="segmento" type="button" data-livello="medio" data-t="medio">Medio</button>
+          <button class="segmento" type="button" data-livello="difficile" data-t="difficile">Difficile</button>
+        </div>
       </div>
-      <label class="interruttore">
-        <input type="checkbox" id="punteggiatura">
-        <span data-t="punteggiatura">Maiuscole e punteggiatura</span>
-      </label>
-      <label class="interruttore" id="etichettaAccenti">
-        <input type="checkbox" id="accenti">
-        <span data-t="accenti">Lettere accentate</span>
-      </label>
-      <label class="interruttore">
-        <span data-t="tastiera">Tastiera</span>
-        <select id="layout">
-          <option value="it" data-t="tastieraIt">Italiana</option>
-          <option value="us" data-t="tastieraUs">Americana (US)</option>
-        </select>
-      </label>
+      <div class="gruppo-imp">
+        <span class="etichetta-imp" data-t="testo">Testo</span>
+        <div class="interruttori">
+          <label class="interruttore">
+            <input type="checkbox" role="switch" id="punteggiatura">
+            <span data-t="punteggiatura">Maiuscole e punteggiatura</span>
+          </label>
+          <label class="interruttore" id="etichettaAccenti">
+            <input type="checkbox" role="switch" id="accenti">
+            <span data-t="accenti">Lettere accentate</span>
+          </label>
+        </div>
+      </div>
+      <div class="gruppo-imp">
+        <label class="etichetta-imp" for="layout" data-t="tastiera">Tastiera</label>
+        <span class="menu">
+          <select id="layout">
+            <option value="it" data-t="tastieraIt">Italiana</option>
+            <option value="us" data-t="tastieraUs">Americana (US)</option>
+          </select>
+        </span>
+      </div>
     </section>
     <p class="nota-us" id="notaUs" data-t-html="notaUs" hidden></p>
 
@@ -116,8 +147,16 @@
         <div><strong id="arcPunti">0</strong><span data-t="punti">punti</span></div>
         <div><strong id="arcMolt">×1</strong><span id="arcSerie"></span></div>
         <div><strong id="arcFrasi">0</strong><span data-t="frasiFatte">frasi</span></div>
+        <!-- Difficoltà della frase che stai scrivendo (estratta in modo semi-casuale) -->
+        <div><span class="chip-livello" id="arcLivello"></span><span data-t="questaFrase">questa frase</span></div>
       </div>
       <div class="popup-zona" id="popupZona" aria-hidden="true"></div>
+      <!-- Legenda delle regole: aperta quando sei fermo, si chiude al primo tasto.
+           Le righe le scrive app.js con i numeri veri del gioco (ARCADE in logica.js). -->
+      <details class="legenda-arcade" id="legendaArcade" open>
+        <summary data-t="comeFunziona">Come funziona</summary>
+        <dl id="righeLegenda"></dl>
+      </details>
     </section>
 
     <!-- Testo da copiare. Il campo nascosto riceve i tasti (serve anche su mobile) -->

@@ -40,6 +40,16 @@ const DURATA_POPUP = 1100;
 // Sotto questi secondi la barra del tempo diventa rossa e pulsa.
 const SECONDI_ALLARME = 5;
 
+// Dopo quanto tempo senza tasti il cursore ricomincia a lampeggiare (ms).
+const PAUSA_CURSORE = 600;
+// Durata del "conteggio" dei numeri che salgono (punti, risultato) (ms).
+const DURATA_CONTEGGIO = 450;
+// Quanti coriandoli per una frase perfetta: abbastanza per festeggiare, pochi per non coprire il testo.
+const CORIANDOLI = 14;
+
+/* Chi ha chiesto al sistema di ridurre i movimenti non vede animazioni. */
+const movimentoRidotto = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 // Dove ricordare le impostazioni scelte tra una visita e l'altra.
 const CHIAVE_IMPOSTAZIONI = "impostazioni-digitazione";
 
@@ -76,6 +86,8 @@ const el = {
   arcMolt: $("arcMolt"), arcSerie: $("arcSerie"), arcFrasi: $("arcFrasi"), popupZona: $("popupZona"),
   risultatoArcade: $("risultatoArcade"), resPunteggio: $("resPunteggio"), resFrasi: $("resFrasi"),
   resFrasiPerfette: $("resFrasiPerfette"), resDurataArcade: $("resDurataArcade"), resSerieArcade: $("resSerieArcade"),
+  arcLivello: $("arcLivello"),
+  legendaArcade: $("legendaArcade"), righeLegenda: $("righeLegenda"), avatarProfilo: $("avatarProfilo"),
   gruppoDurata: $("gruppoDurata"), gruppoLivello: $("gruppoLivello"), thValoreSfida: $("thValoreSfida"),
   opzioniModalita: document.querySelectorAll("[data-modalita]"),
   opzioniDurata: document.querySelectorAll("[data-durata]"),
@@ -85,7 +97,8 @@ const el = {
 /* ---------- Impostazioni (ricordate nel browser) ---------- */
 
 const impostazioni = {
-  modalita: "classica", lingua: "it", durata: 60, livello: "medio", punteggiatura: true, accenti: false,
+  modalita: "classica", lingua: "it", durata: 60,
+  legendaChiusa: false, // la legenda arcade resta chiusa se l'utente l'ha chiusa livello: "medio", punteggiatura: true, accenti: false,
   // Predefinita italiana: chi attiva le lettere accentate ha quasi sempre
   // una tastiera italiana, dove "è", "à"... hanno un tasto proprio.
   layout: "it",
@@ -142,12 +155,14 @@ function salvaImpostazioni() {
 
 /* Allinea i controlli della pagina alle impostazioni correnti. */
 function mostraImpostazioni() {
-  el.opzioniModalita.forEach((b) => b.classList.toggle("attiva", b.dataset.modalita === impostazioni.modalita));
+  // Opzione scelta: in rilievo (classe "attiva") e annunciata dai lettori di schermo (aria-pressed).
+  const scegli = (b, scelto) => { b.classList.toggle("attiva", scelto); b.setAttribute("aria-pressed", String(scelto)); };
+  el.opzioniModalita.forEach((b) => scegli(b, b.dataset.modalita === impostazioni.modalita));
   // In arcade durata e livello li decide il gioco: i loro controlli spariscono.
   el.gruppoDurata.hidden = el.gruppoLivello.hidden = eArcade();
   el.hudArcade.hidden = !eArcade();
-  el.opzioniDurata.forEach((b) => b.classList.toggle("attiva", Number(b.dataset.durata) === impostazioni.durata));
-  el.opzioniLivello.forEach((b) => b.classList.toggle("attiva", b.dataset.livello === impostazioni.livello));
+  el.opzioniDurata.forEach((b) => scegli(b, Number(b.dataset.durata) === impostazioni.durata));
+  el.opzioniLivello.forEach((b) => scegli(b, b.dataset.livello === impostazioni.livello));
   el.punteggiatura.checked = impostazioni.punteggiatura;
   el.accenti.checked = impostazioni.accenti;
   el.layout.value = impostazioni.layout;
@@ -164,7 +179,11 @@ function mostraImpostazioni() {
   etichettaTastiera();
   applicaTesti();
   // Dopo applicaTesti: il suggerimento cambia con la modalità.
-  el.suggerimento.textContent = t(eArcade() ? "suggerimentoArcade" : "suggerimento");
+  // Il numero dei secondi viene dalle regole (ARCADE), non è scritto nel testo.
+  el.suggerimento.textContent = eArcade()
+    ? t("suggerimentoArcade", { secondi: ARCADE.TEMPO_INIZIALE / 1000 })
+    : t("suggerimento");
+  disegnaLegenda();
   el.thValoreSfida.textContent = t(eArcade() ? "punti" : "paroleMin");
 }
 
@@ -223,11 +242,12 @@ function allungaTesto(quantiCaratteri) {
   while (aggiunta.length < quantiCaratteri) {
     // Lo spazio separa una frase dalla precedente (tranne all'inizio).
     const separatore = stato.modello.length + aggiunta.length > 0 ? " " : "";
-    // In arcade il livello cresce con il numero della frase (facile → medio → difficile).
-    const opzioni = eArcade() ? { ...opzioniEffettive(), livello: livelloArcade(stato.frasi.length) } : opzioniEffettive();
-    const frase = generaFrase(opzioni);
+    // In arcade il livello è estratto in modo semi-casuale: la tendenza sale con
+    // il numero della frase, ma ci sono sorprese (vedi livelloArcade).
+    const livello = eArcade() ? livelloArcade(stato.frasi.length) : impostazioni.livello;
+    const frase = generaFrase({ ...opzioniEffettive(), livello });
     const inizio = stato.modello.length + aggiunta.length + separatore.length;
-    stato.frasi.push({ inizio, fine: inizio + frase.length });
+    stato.frasi.push({ inizio, fine: inizio + frase.length, livello });
     aggiunta += separatore + frase;
   }
   const frammento = document.createDocumentFragment();
@@ -262,9 +282,67 @@ function coloraIntervallo(da, a) {
  * Fa scorrere il testo così la riga del cursore resta la seconda visibile:
  * vedi sempre la riga appena scritta sopra e quella che arriva sotto.
  */
+/*
+ * Cursore che scorre: invece di accendere un bordo sulla lettera (che "salta"),
+ * un'unica stanghetta si sposta con una transizione breve sulla lettera da
+ * scrivere. Lampeggia solo quando sei fermo, come in un editor.
+ */
+const caret = document.createElement("span");
+caret.className = "caret";
+caret.setAttribute("aria-hidden", "true");
+let timerCaret = null;
+
+function posizionaCaret() {
+  const lettera = stato.span[stato.scritto.length];
+  if (!lettera) return;
+  if (!caret.isConnected) el.testo.appendChild(caret);
+  caret.style.height = `${lettera.offsetHeight}px`;
+  caret.style.transform = `translate(${lettera.offsetLeft}px, ${lettera.offsetTop}px)`;
+  caret.classList.remove("fermo");
+  clearTimeout(timerCaret);
+  timerCaret = setTimeout(() => caret.classList.add("fermo"), PAUSA_CURSORE);
+}
+
+/* Piccola scossa del riquadro su una lettera sbagliata (non sugli errori minori). */
+function scuoti() {
+  if (movimentoRidotto()) return;
+  el.areaTesto.classList.remove("scossa");
+  void el.areaTesto.offsetWidth; // fa ripartire l'animazione anche se era già in corso
+  el.areaTesto.classList.add("scossa");
+}
+
+/* Fa ripartire un'animazione CSS legata a una classe. */
+function lampo(elemento, classe) {
+  if (movimentoRidotto()) return;
+  elemento.classList.remove(classe);
+  void elemento.offsetWidth;
+  elemento.classList.add(classe);
+}
+
+/*
+ * Numero che "conta" fino al valore nuovo invece di cambiare di colpo.
+ * Una sola animazione per elemento: se ne arriva una nuova, la vecchia si ferma.
+ */
+const conteggi = new WeakMap();
+function animaNumero(elemento, valore, formato = (n) => String(n)) {
+  const da = Number(elemento.dataset.valore ?? 0);
+  elemento.dataset.valore = valore;
+  cancelAnimationFrame(conteggi.get(elemento));
+  if (movimentoRidotto() || da === valore) { elemento.textContent = formato(valore); return; }
+  const inizio = performance.now();
+  const passo = (adesso) => {
+    const p = Math.min(1, (adesso - inizio) / DURATA_CONTEGGIO);
+    const facilita = 1 - (1 - p) ** 3; // parte veloce, rallenta alla fine
+    elemento.textContent = formato(Math.round(da + (valore - da) * facilita));
+    if (p < 1) conteggi.set(elemento, requestAnimationFrame(passo));
+  };
+  conteggi.set(elemento, requestAnimationFrame(passo));
+}
+
 function scorriAlCursore() {
   const cursore = stato.span[stato.scritto.length];
   if (!cursore) return;
+  posizionaCaret();
   // Si scorre sempre di righe INTERE: l'altezza di riga (non quella della
   // lettera, che è più bassa) dice quanto è alta ogni riga. Con il testo
   // grande, usare l'altezza della lettera lasciava righe tagliate a metà.
@@ -304,6 +382,51 @@ function tempoScaduto() {
 
 /* ---------- Modalità arcade ---------- */
 
+/*
+ * Legenda delle regole. I numeri arrivano da ARCADE (logica.js), non sono
+ * scritti nei testi: se si cambiano le regole, la legenda resta giusta da sola.
+ * Ogni riga ha un'etichetta colorata come le scritte che compaiono in partita
+ * ("+3 s" verde, "+50" arancio, "×2" blu, errore rosso).
+ */
+/* Nomi al plurale dei livelli, per la legenda ("20% medie"). */
+const PLURALI = { facile: "plFacile", medio: "plMedio", difficile: "plDifficile" };
+
+/* "80% facili, 20% medie": le probabilità di una fase dell'arcade, a parole. */
+function descriviFase(fase) {
+  const p = ARCADE.PROBABILITA_LIVELLI[fase];
+  return ["facile", "medio", "difficile"]
+    .filter((l) => p[l] > 0)
+    .map((l) => `${Math.round(p[l] * 100)}% ${t(PLURALI[l])}`)
+    .join(", ");
+}
+
+function disegnaLegenda() {
+  const s = (ms) => Math.round(ms / 1000);
+  const righe = [
+    ["tempo", `${s(ARCADE.TEMPO_INIZIALE)} s`, "legTempoTitolo", "legTempo", { inizio: s(ARCADE.TEMPO_INIZIALE), massimo: s(ARCADE.TEMPO_MASSIMO) }],
+    ["tempo", "+s", "legFraseTitolo", "legFrase", { caratteri: ARCADE.CARATTERI_PER_SECONDO }],
+    ["tempo", `+${s(ARCADE.BONUS_FRASE_PERFETTA)} s`, "legPerfettaTitolo", "legPerfetta", { bonus: s(ARCADE.BONUS_FRASE_PERFETTA), punti: ARCADE.PUNTI_FRASE_PERFETTA }],
+    ["punti", "+1", "legCarattereTitolo", "legCarattere", {}],
+    ["molt", "×2", "legSerieTitolo", "legSerie", { s1: ARCADE.SOGLIE_SERIE[0], s2: ARCADE.SOGLIE_SERIE[1], s3: ARCADE.SOGLIE_SERIE[2] }],
+    ["errore", "×1", "legErroriTitolo", "legErrori", {}],
+    ["livello", "?", "legLivelliTitolo", "legLivelli", {
+      f: ARCADE.FRASI_FACILI, f1: ARCADE.FRASI_FACILI + 1, m: ARCADE.FRASI_MEDIE, m1: ARCADE.FRASI_MEDIE + 1,
+      a: descriviFase(0), b: descriviFase(1), c: descriviFase(2),
+    }],
+  ];
+  el.righeLegenda.textContent = "";
+  for (const [tipo, esempio, titolo, testo, valori] of righe) {
+    const dt = document.createElement("dt");
+    const chip = document.createElement("span");
+    chip.className = `chip ${tipo}`;
+    chip.textContent = esempio;
+    dt.append(chip, t(titolo));
+    const dd = document.createElement("dd");
+    dd.textContent = t(testo, valori);
+    el.righeLegenda.append(dt, dd);
+  }
+}
+
 /* Barra del tempo: piena = tempo massimo accumulabile. Rossa e pulsante negli ultimi secondi. */
 function aggiornaBarraTempo(restanti) {
   el.barraTempo.style.width = `${Math.min(100, (restanti * 1000 * 100) / ARCADE.TEMPO_MASSIMO)}%`;
@@ -313,7 +436,7 @@ function aggiornaBarraTempo(restanti) {
 /* Punti, moltiplicatore e frasi in alto. */
 function aggiornaHud() {
   const molt = moltiplicatore(stato.serie);
-  el.arcPunti.textContent = stato.punteggio;
+  animaNumero(el.arcPunti, stato.punteggio);
   el.arcMolt.textContent = `×${molt}`;
   el.arcFrasi.textContent = stato.frasiCompletate;
   const soglia = ARCADE.SOGLIE_SERIE.find((s) => s > stato.serie);
@@ -321,6 +444,35 @@ function aggiornaHud() {
     ? t("serieAlMassimo", { n: stato.serie })
     : t("serieVerso", { n: stato.serie, m: molt + 1, soglia });
   el.arcMolt.classList.toggle("acceso", molt > 1);
+  // Difficoltà della frase in corso: cambia colore, e "salta" quando cambia.
+  const livello = stato.frasi[stato.prossimaFrase]?.livello;
+  if (livello && el.arcLivello.dataset.livello !== livello) {
+    el.arcLivello.dataset.livello = livello;
+    el.arcLivello.textContent = t(livello);
+    lampo(el.arcLivello, "cambia");
+  }
+}
+
+/*
+ * Coriandoli per una frase perfetta: piccoli pezzi che partono dalla barra
+ * arcade in direzioni a caso. Solo CSS (variabili per direzione e rotazione),
+ * nessuna libreria; si tolgono da soli a fine animazione.
+ */
+function coriandoli() {
+  if (movimentoRidotto()) return;
+  const colori = ["var(--accento)", "var(--ok)", "var(--serie-velocita)", "var(--minore)"];
+  for (let i = 0; i < CORIANDOLI; i++) {
+    const c = document.createElement("span");
+    c.className = "coriandolo";
+    const angolo = (Math.PI * 2 * i) / CORIANDOLI + Math.random() * 0.5;
+    const distanza = 40 + Math.random() * 50;
+    c.style.setProperty("--dx", `${Math.cos(angolo) * distanza}px`);
+    c.style.setProperty("--dy", `${Math.sin(angolo) * distanza - 20}px`);
+    c.style.setProperty("--giro", `${Math.round(Math.random() * 540 - 270)}deg`);
+    c.style.background = colori[i % colori.length];
+    el.popupZona.appendChild(c);
+    setTimeout(() => c.remove(), 900);
+  }
 }
 
 /* Scritta che compare e svanisce ("+6 s", "+50", "×2!"). */
@@ -352,7 +504,7 @@ function controllaParole() {
       stato.serie++;
       stato.serieMax = Math.max(stato.serieMax, stato.serie);
       const dopo = moltiplicatore(stato.serie);
-      if (dopo > prima) popup(`×${dopo}!`, "molt");
+      if (dopo > prima) { popup(`×${dopo}!`, "molt"); lampo(el.arcMolt, "balzo"); lampo(el.hudArcade, "lampo-molt"); }
     }
     stato.prossimaParola = fine;
   }
@@ -378,6 +530,9 @@ function controllaFrasi() {
     if (perfetta) stato.frasiPerfette++;
     popup(`+${Math.round(premio.ms / 1000)} s`, "tempo");
     if (premio.punti) popup(`+${premio.punti}`, "punti");
+    lampo(el.barraTempo, "guadagno");
+    lampo(el.areaTesto, perfetta ? "frase-perfetta" : "frase-ok");
+    if (perfetta) coriandoli();
     stato.prossimaFrase++;
   }
 }
@@ -398,6 +553,8 @@ function mostraProfili() {
     el.profilo.appendChild(o);
   }
   el.profilo.value = profilo().id;
+  // Iniziale del nome nel cerchio (Array.from: conta bene anche le lettere accentate ed emoji).
+  el.avatarProfilo.textContent = (Array.from(profilo().nome)[0] || "?").toUpperCase();
   el.eliminaProfilo.disabled = profili.profili.length <= 1;
 }
 
@@ -578,7 +735,11 @@ function mostraTestoSopraTastiera() {
 
 function avviaTimer() {
   stato.inizio = performance.now();
-  if (eArcade()) stato.scadenza = stato.inizio + ARCADE.TEMPO_INIZIALE;
+  if (eArcade()) {
+    stato.scadenza = stato.inizio + ARCADE.TEMPO_INIZIALE;
+    // Si gioca: la legenda si chiude per non distrarre (la preferenza non cambia).
+    el.legendaArcade.open = false;
+  }
   // Modalità concentrazione: sul telefono, mentre scrivi, si nasconde tutto
   // tranne tempo, testo e "Ricomincia" (le regole sono in stile.css).
   document.body.classList.add("in-gioco");
@@ -616,7 +777,8 @@ function termina() {
   const record = migliore(profilo(), modalitaCorrente(), eArcade() ? "punteggio" : "ppm");
   el.risultatoArcade.hidden = !eArcade();
   if (eArcade()) {
-    el.resPunteggio.textContent = stato.punteggio;
+    el.resPunteggio.dataset.valore = 0;
+    animaNumero(el.resPunteggio, stato.punteggio);
     el.resFrasi.textContent = stato.frasiCompletate;
     el.resFrasiPerfette.textContent = stato.frasiPerfette;
     el.resDurataArcade.textContent = Math.round(durataMs() / 1000);
@@ -637,6 +799,12 @@ function termina() {
   el.areaTesto.hidden = true;
   el.risultato.hidden = false;
   el.avvisoSalvataggio.hidden = salvato;
+  // I numeri principali contano da zero; i blocchi del risultato entrano uno dopo l'altro.
+  for (const [elemento, valore, formato] of [
+    [el.resPpm, ppm], [el.resBpm, bpm], [el.resPrecisione, precisione, (n) => n + "%"],
+    [el.resCaratteri, contaGiusti(stato.scritto, stato.modello)], [el.resRecord, record],
+  ]) { elemento.dataset.valore = 0; animaNumero(elemento, valore, formato); }
+  lampo(el.risultato, "entra");
   // Il grafico si disegna dopo aver mostrato il risultato: gli serve la larghezza vera.
   disegnaGrafico(el.graficoRisultato, serie, t);
   mostraPunteggi();
@@ -661,8 +829,14 @@ function ricomincia() {
   el.annuncio.textContent = "";
   allungaTesto(MARGINE_TESTO * 3);
   coloraIntervallo(0, 0);
+  el.testo.appendChild(caret);
+  requestAnimationFrame(posizionaCaret); // dopo che il testo è stato impaginato
   el.tempo.textContent = durataMs() / 1000;
   el.popupZona.textContent = "";
+  // A partita ferma la legenda si riapre, a meno che l'utente l'abbia chiusa lui.
+  el.legendaArcade.open = !impostazioni.legendaChiusa;
+  el.arcPunti.dataset.valore = 0;
+  delete el.arcLivello.dataset.livello; // così l'etichetta si ridisegna con la nuova partita
   aggiornaHud();
   aggiornaBarraTempo(ARCADE.TEMPO_INIZIALE / 1000);
   el.ppm.textContent = "0";
@@ -707,8 +881,14 @@ function suInput(evento) {
     if (nuovo[i] !== atteso) {
       registraErrore(atteso, nuovo[i]);
       stato.posizioniErrate.add(i);
+      const tipo = classificaErrore(atteso, nuovo[i]);
+      if (tipo === "lettera") scuoti();
       // Arcade: l'errore accorcia subito la serie (azzerata o un gradino giù).
-      if (eArcade()) stato.serie = serieDopoErrore(stato.serie, classificaErrore(atteso, nuovo[i]));
+      if (eArcade()) {
+        const primaMolt = moltiplicatore(stato.serie);
+        stato.serie = serieDopoErrore(stato.serie, tipo);
+        if (moltiplicatore(stato.serie) < primaMolt) lampo(el.arcMolt, "rotto");
+      }
     } else if (eArcade() && !stato.posizioniPagate.has(i)) {
       // Ogni carattere giusto vale 1 punto per il moltiplicatore, una volta sola.
       stato.posizioniPagate.add(i);
@@ -926,6 +1106,12 @@ el.siElimina.addEventListener("click", () => {
 });
 
 el.chiudiStorico.addEventListener("click", () => { el.pannelloStorico.hidden = true; });
+// Solo un clic dell'utente sulla legenda cambia la preferenza (le aperture e
+// chiusure automatiche a inizio e fine partita no). Il clic arriva prima che
+// la legenda cambi stato: leggiamo lo stato nuovo un attimo dopo.
+el.legendaArcade.querySelector("summary").addEventListener("click", () => {
+  setTimeout(() => { impostazioni.legendaChiusa = !el.legendaArcade.open; salvaImpostazioni(); });
+});
 el.opzioniModalita.forEach((b) => b.addEventListener("click", () => cambia(() => { impostazioni.modalita = b.dataset.modalita; })));
 el.opzioniDurata.forEach((b) => b.addEventListener("click", () => cambia(() => { impostazioni.durata = Number(b.dataset.durata); })));
 el.opzioniLivello.forEach((b) => b.addEventListener("click", () => cambia(() => { impostazioni.livello = b.dataset.livello; })));
