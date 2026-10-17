@@ -208,7 +208,9 @@ function disegnaGrafico(contenitore, punti, t) {
         svg("circle", { cx: px, cy: py, r: 4.5, fill: s.colore, class: "pallino-picco" }, radice);
         // L'etichetta non deve uscire dai bordi: si allinea verso l'interno.
         const ancora = px < MARGINE.sinistra + 50 ? "start" : px > larghezza - MARGINE.destra - 50 ? "end" : "middle";
-        const etichetta = svg("text", { x: px, y: py - 10, class: "etichetta-picco", "text-anchor": ancora }, radice);
+        // Se sopra il punto non c'è spazio (finirebbe sul titolo della fascia), va sotto.
+        const sotto = py - 10 < cima + 6;
+        const etichetta = svg("text", { x: px, y: sotto ? py + 20 : py - 10, class: "etichetta-picco", "text-anchor": ancora }, radice);
         etichetta.textContent = `${t("picco")} ${picco.ppm}`;
       }
       return { serie: s, y, cima };

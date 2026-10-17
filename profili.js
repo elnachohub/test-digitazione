@@ -65,17 +65,23 @@ function registraTest(profilo, test) {
   if (profilo.storico.length > MAX_STORICO) profilo.storico.splice(0, profilo.storico.length - MAX_STORICO);
 }
 
-/* Miglior velocità del profilo in una modalità (record importati compresi). */
-function migliore(profilo, modalita) {
-  const dalloStorico = profilo.storico.filter((t) => t.modalita === modalita).map((t) => t.ppm);
-  return Math.max(0, profilo.importati[modalita] || 0, ...dalloStorico);
+/*
+ * `campo` = cosa si confronta: "ppm" (velocità, modalità classica) oppure
+ * "punteggio" (modalità arcade). I record importati sono solo velocità.
+ */
+
+/* Miglior risultato del profilo in una modalità (record importati compresi). */
+function migliore(profilo, modalita, campo = "ppm") {
+  const dalloStorico = profilo.storico.filter((t) => t.modalita === modalita).map((t) => t[campo] || 0);
+  const importato = campo === "ppm" ? profilo.importati[modalita] || 0 : 0;
+  return Math.max(0, importato, ...dalloStorico);
 }
 
 /* Media della velocità negli ultimi `quanti` test di una modalità (null se nessuno). */
-function mediaRecente(profilo, modalita, quanti = 10) {
+function mediaRecente(profilo, modalita, quanti = 10, campo = "ppm") {
   const ultimi = profilo.storico.filter((t) => t.modalita === modalita).slice(-quanti);
   if (ultimi.length === 0) return null;
-  return Math.round(ultimi.reduce((a, t) => a + t.ppm, 0) / ultimi.length);
+  return Math.round(ultimi.reduce((a, t) => a + (t[campo] || 0), 0) / ultimi.length);
 }
 
 /*
@@ -83,16 +89,17 @@ function mediaRecente(profilo, modalita, quanti = 10) {
  * Compaiono solo i profili che hanno almeno un risultato in quella modalità.
  * A pari velocità vince la precisione migliore.
  */
-function classifica(dati, modalita) {
+function classifica(dati, modalita, campo = "ppm") {
   return dati.profili
     .map((p) => {
       const test = p.storico.filter((t) => t.modalita === modalita);
-      const ppm = migliore(p, modalita);
-      const precisione = Math.max(0, ...test.filter((t) => t.ppm === ppm).map((t) => t.precisione));
-      return { id: p.id, nome: p.nome, ppm, precisione, test: test.length };
+      const valore = migliore(p, modalita, campo);
+      const precisione = Math.max(0, ...test.filter((t) => (t[campo] || 0) === valore).map((t) => t.precisione));
+      // `ppm` resta per compatibilità: nella classica è il valore stesso.
+      return { id: p.id, nome: p.nome, valore, ppm: campo === "ppm" ? valore : undefined, precisione, test: test.length };
     })
-    .filter((r) => r.ppm > 0)
-    .sort((a, b) => b.ppm - a.ppm || b.precisione - a.precisione);
+    .filter((r) => r.valore > 0)
+    .sort((a, b) => b.valore - a.valore || b.precisione - a.precisione);
 }
 
 /*

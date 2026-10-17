@@ -93,7 +93,9 @@ function calcolaStatistiche({ giusti, tastiPremuti, errori, trascorsoMs, durataM
 
 /* Un record per ogni combinazione di impostazioni (lingua compresa): senza maiuscole è più facile,
  * mischiare i record renderebbe il confronto ingiusto. */
-function chiaveRecord({ lingua = "it", durata, livello, punteggiatura, accenti }) {
+function chiaveRecord({ modalita = "classica", lingua = "it", durata, livello, punteggiatura, accenti }) {
+  // Arcade: durata e livello non si scelgono (cambiano durante la partita).
+  if (modalita === "arcade") return `record-digitazione-v2-arcade-${lingua}-p${+punteggiatura}-a${+accenti}`;
   // Per l'italiano la chiave resta quella di prima: i record già fatti non si perdono.
   const suffissoLingua = lingua === "it" ? "" : `-${lingua}`;
   return `record-digitazione-v2-${durata}-${livello}-p${+punteggiatura}-a${+accenti}${suffissoLingua}`;
@@ -162,6 +164,108 @@ const SEGNI_PROVVISORI = /^[`´¨^~ˆ˜]$/;
  */
 function eSegnoProvvisorio(evento) {
   return Boolean(evento && evento.isComposing && typeof evento.data === "string" && SEGNI_PROVVISORI.test(evento.data));
+}
+
+/* ---------- Serie di parole senza errori ---------- */
+
+/*
+ * Divide il testo scritto in parole e dice quali sono "perfette".
+ * Una parola è perfetta se in NESSUNA delle sue posizioni è mai stato premuto
+ * un tasto sbagliato (anche se poi corretto) e se quello che resta scritto è
+ * giusto. Lo spazio dopo la parola fa parte della parola: finire una parola
+ * troppo presto o troppo tardi è un errore di quella parola.
+ * Contano solo le parole completate (scritte fino in fondo, spazio compreso,
+ * oppure l'ultima parola del testo se è finito lì).
+ *
+ * modello: il testo da copiare; scritto: il testo scritto;
+ * posizioniErrate: insieme (Set) delle posizioni dove c'è stato almeno un errore.
+ * Restituisce { sequenza: [true/false per ogni parola], perfette, totale, serieMax }.
+ */
+function serieParole(modello, scritto, posizioniErrate) {
+  const sequenza = [];
+  let inizio = 0;
+  while (inizio < modello.length) {
+    let fine = modello.indexOf(" ", inizio);
+    // La parola comprende il suo spazio finale (se c'è).
+    fine = fine === -1 ? modello.length : fine + 1;
+    if (scritto.length < fine) break; // parola non ancora completata
+    let perfetta = true;
+    for (let i = inizio; i < fine; i++) {
+      if (posizioniErrate.has(i) || scritto[i] !== modello[i]) { perfetta = false; break; }
+    }
+    sequenza.push(perfetta);
+    inizio = fine;
+  }
+  let serieMax = 0, corrente = 0;
+  for (const p of sequenza) {
+    corrente = p ? corrente + 1 : 0;
+    serieMax = Math.max(serieMax, corrente);
+  }
+  return { sequenza, perfette: sequenza.filter(Boolean).length, totale: sequenza.length, serieMax };
+}
+
+/* ---------- Modalità arcade ---------- */
+
+/*
+ * Regole dell'arcade. Tutti i numeri del gioco stanno qui, così si possono
+ * bilanciare in un posto solo (e i test li controllano).
+ *
+ * Bilanciamento: una frase media (~60 caratteri) dà 6 s, 9 s se perfetta.
+ * A 40 parole/min (200 caratteri/min) per scriverla servono ~18 s: si perde
+ * tempo e la partita dura un paio di minuti. A 80 parole/min servono ~9 s:
+ * chi scrive bene e pulito resta in equilibrio finché le frasi difficili,
+ * più lunghe, non lo rallentano. L'abilità decide quanto dura la partita.
+ */
+const ARCADE = {
+  TEMPO_INIZIALE: 30000,
+  // Il tempo accumulato non supera 60 s: anche chi va fortissimo resta sotto pressione.
+  TEMPO_MASSIMO: 60000,
+  // Ogni frase completata vale 1 s ogni 10 caratteri (minimo 1 s).
+  CARATTERI_PER_SECONDO: 10,
+  BONUS_FRASE_PERFETTA: 3000,
+  PUNTI_FRASE_PERFETTA: 50,
+  // Parole perfette di fila per passare a ×2, ×3, ×4.
+  SOGLIE_SERIE: [10, 25, 50],
+  // Le prime frasi sono facili, poi medie, poi difficili.
+  FRASI_FACILI: 4,
+  FRASI_MEDIE: 12,
+};
+
+/* Moltiplicatore dei punti per una serie di parole perfette di fila (×1…×4). */
+function moltiplicatore(serie) {
+  return 1 + ARCADE.SOGLIE_SERIE.filter((soglia) => serie >= soglia).length;
+}
+
+/*
+ * Serie dopo un errore: una lettera sbagliata la azzera; un errore minore
+ * (maiuscola, accento, spazio) la fa scendere di un gradino del moltiplicatore.
+ */
+function serieDopoErrore(serie, tipo) {
+  if (tipo === "lettera") return 0;
+  const gradini = [0, ...ARCADE.SOGLIE_SERIE];
+  const livello = moltiplicatore(serie) - 1; // 0 = ×1
+  return livello === 0 ? 0 : gradini[livello - 1];
+}
+
+/* Premio per una frase completata: millisecondi guadagnati e punti bonus. */
+function premioFrase(lunghezza, perfetta, molt) {
+  const base = Math.max(1, Math.round(lunghezza / ARCADE.CARATTERI_PER_SECONDO)) * 1000;
+  return {
+    ms: base + (perfetta ? ARCADE.BONUS_FRASE_PERFETTA : 0),
+    punti: perfetta ? ARCADE.PUNTI_FRASE_PERFETTA * molt : 0,
+  };
+}
+
+/* Nuova scadenza dopo un guadagno di tempo, senza superare il tetto. */
+function nuovaScadenza(scadenza, adesso, guadagnoMs) {
+  return Math.min(scadenza + guadagnoMs, adesso + ARCADE.TEMPO_MASSIMO);
+}
+
+/* Livello della n-esima frase della partita (0 = la prima). */
+function livelloArcade(indiceFrase) {
+  if (indiceFrase < ARCADE.FRASI_FACILI) return "facile";
+  if (indiceFrase < ARCADE.FRASI_MEDIE) return "medio";
+  return "difficile";
 }
 
 /* ---------- Andamento nel tempo (per il grafico) ---------- */
@@ -254,6 +358,7 @@ if (typeof module !== "undefined") {
   module.exports = {
     classificaErrore, eMinore, tastoDellErrore, contaGiusti, calcolaStatistiche,
     chiaveRecord, tastiPerCarattere, senzaAccenti, PESO_ERRORE_MINORE,
-    fluidita, serieDelTest, differenzaInput, eSegnoProvvisorio,
+    fluidita, serieDelTest, differenzaInput, eSegnoProvvisorio, serieParole,
+    ARCADE, moltiplicatore, serieDopoErrore, premioFrase, nuovaScadenza, livelloArcade,
   };
 }

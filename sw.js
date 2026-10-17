@@ -11,7 +11,7 @@
  */
 
 // Cambiare il numero quando cambia l'elenco dei file: la copia vecchia viene buttata.
-const CACHE = "digitazione-v3";
+const CACHE = "digitazione-v6";
 const FILE = [
   "./", "index.html", "stile.css", "testi.js", "frasi.js", "logica.js",
   "profili.js", "grafico.js", "app.js", "manifest.webmanifest",

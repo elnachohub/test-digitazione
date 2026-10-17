@@ -11,6 +11,11 @@
  * - il tempo parte al primo tasto, non al caricamento della pagina;
  * - a fine test si riparte SOLO con Tab (o col bottone): chi sta ancora
  *   scrivendo non deve far sparire il risultato per sbaglio.
+ *
+ * Due modalità: "classica" (durata fissa, livello scelto) e "arcade" (si parte
+ * con poco tempo e lo si guadagna completando frasi; punti con moltiplicatore
+ * per le serie di parole perfette; le frasi diventano più difficili). Le regole
+ * e i numeri dell'arcade stanno in logica.js (ARCADE).
  */
 
 /* ---------- Costanti ---------- */
@@ -29,6 +34,11 @@ const TASTI_IN_CLASSIFICA = 5;
 
 // Righe della cronologia mostrate: le più recenti. Lo storico completo resta salvato.
 const RIGHE_CRONOLOGIA = 20;
+
+// Quanto restano visibili i "+3 s" e "+50" dell'arcade (ms), uguale all'animazione in stile.css.
+const DURATA_POPUP = 1100;
+// Sotto questi secondi la barra del tempo diventa rossa e pulsa.
+const SECONDI_ALLARME = 5;
 
 // Dove ricordare le impostazioni scelte tra una visita e l'altra.
 const CHIAVE_IMPOSTAZIONI = "impostazioni-digitazione";
@@ -58,8 +68,16 @@ const el = {
   chiudiStorico: $("chiudiStorico"), graficoStorico: $("graficoStorico"),
   statisticheVivo: $("statisticheVivo"), ricominciaTest: $("ricominciaTest"),
   confermaElimina: $("confermaElimina"), testoConferma: $("testoConferma"),
+  resSerieMax: $("resSerieMax"), resPerfette: $("resPerfette"), resPercPerfette: $("resPercPerfette"),
+  strisciaParole: $("strisciaParole"),
   siElimina: $("siElimina"), noElimina: $("noElimina"),
   tastiera: $("tastiera"),
+  hudArcade: $("hudArcade"), barraTempo: $("barraTempo"), arcPunti: $("arcPunti"),
+  arcMolt: $("arcMolt"), arcSerie: $("arcSerie"), arcFrasi: $("arcFrasi"), popupZona: $("popupZona"),
+  risultatoArcade: $("risultatoArcade"), resPunteggio: $("resPunteggio"), resFrasi: $("resFrasi"),
+  resFrasiPerfette: $("resFrasiPerfette"), resDurataArcade: $("resDurataArcade"), resSerieArcade: $("resSerieArcade"),
+  gruppoDurata: $("gruppoDurata"), gruppoLivello: $("gruppoLivello"), thValoreSfida: $("thValoreSfida"),
+  opzioniModalita: document.querySelectorAll("[data-modalita]"),
   opzioniDurata: document.querySelectorAll("[data-durata]"),
   opzioniLivello: document.querySelectorAll("[data-livello]"),
 };
@@ -67,7 +85,7 @@ const el = {
 /* ---------- Impostazioni (ricordate nel browser) ---------- */
 
 const impostazioni = {
-  lingua: "it", durata: 60, livello: "medio", punteggiatura: true, accenti: false,
+  modalita: "classica", lingua: "it", durata: 60, livello: "medio", punteggiatura: true, accenti: false,
   // Predefinita italiana: chi attiva le lettere accentate ha quasi sempre
   // una tastiera italiana, dove "è", "à"... hanno un tasto proprio.
   layout: "it",
@@ -113,6 +131,7 @@ function caricaImpostazioni() {
  * La scelta dell'utente resta salvata, così tornando all'italiano la ritrova.
  */
 const accentiAttivi = () => impostazioni.lingua === "it" && impostazioni.accenti;
+const eArcade = () => impostazioni.modalita === "arcade";
 
 /* Le impostazioni come le vedono frasi e record (accenti già "filtrati" per lingua). */
 const opzioniEffettive = () => ({ ...impostazioni, accenti: accentiAttivi() });
@@ -123,6 +142,10 @@ function salvaImpostazioni() {
 
 /* Allinea i controlli della pagina alle impostazioni correnti. */
 function mostraImpostazioni() {
+  el.opzioniModalita.forEach((b) => b.classList.toggle("attiva", b.dataset.modalita === impostazioni.modalita));
+  // In arcade durata e livello li decide il gioco: i loro controlli spariscono.
+  el.gruppoDurata.hidden = el.gruppoLivello.hidden = eArcade();
+  el.hudArcade.hidden = !eArcade();
   el.opzioniDurata.forEach((b) => b.classList.toggle("attiva", Number(b.dataset.durata) === impostazioni.durata));
   el.opzioniLivello.forEach((b) => b.classList.toggle("attiva", b.dataset.livello === impostazioni.livello));
   el.punteggiatura.checked = impostazioni.punteggiatura;
@@ -140,6 +163,9 @@ function mostraImpostazioni() {
   el.testo.lang = impostazioni.lingua;
   etichettaTastiera();
   applicaTesti();
+  // Dopo applicaTesti: il suggerimento cambia con la modalità.
+  el.suggerimento.textContent = t(eArcade() ? "suggerimentoArcade" : "suggerimento");
+  el.thValoreSfida.textContent = t(eArcade() ? "punti" : "paroleMin");
 }
 
 /* ---------- Stato del test ---------- */
@@ -159,11 +185,34 @@ function statoIniziale() {
     // Registro di ogni carattere inserito: { t: ms dal primo tasto, giusto }.
     // Serve al grafico per ricostruire velocità, errori e fluidità secondo per secondo.
     battute: [],
+    // Posizioni del testo dove è stato premuto almeno un tasto sbagliato, anche
+    // se poi corretto: servono a dire quali parole sono state scritte "perfette".
+    posizioniErrate: new Set(),
+
+    // --- Solo arcade ---
+    frasi: [],               // { inizio, fine } di ogni frase nel modello
+    prossimaFrase: 0,        // prima frase non ancora premiata
+    prossimaParola: 0,       // posizione dove inizia la prima parola non ancora contata
+    scadenza: null,          // istante (performance.now) in cui finisce il tempo
+    punteggio: 0,
+    serie: 0,                // parole perfette di fila (decide il moltiplicatore)
+    serieMax: 0,
+    frasiCompletate: 0,
+    frasiPerfette: 0,
+    // Posizioni già pagate in punti: cancellare e riscrivere non fa guadagnare di più.
+    posizioniPagate: new Set(),
   };
 }
 let stato = statoIniziale();
 
-const durataMs = () => impostazioni.durata * 1000;
+/*
+ * Durata della partita in ms. Classica: quella scelta. Arcade: dal primo tasto
+ * alla scadenza attuale, che si allunga a ogni frase completata.
+ */
+const durataMs = () => {
+  if (!eArcade()) return impostazioni.durata * 1000;
+  return stato.scadenza === null ? ARCADE.TEMPO_INIZIALE : stato.scadenza - stato.inizio;
+};
 const trascorsoMs = () => (stato.inizio === null ? null : performance.now() - stato.inizio);
 
 /* ---------- Testo da copiare ---------- */
@@ -174,7 +223,12 @@ function allungaTesto(quantiCaratteri) {
   while (aggiunta.length < quantiCaratteri) {
     // Lo spazio separa una frase dalla precedente (tranne all'inizio).
     const separatore = stato.modello.length + aggiunta.length > 0 ? " " : "";
-    aggiunta += separatore + generaFrase(opzioniEffettive());
+    // In arcade il livello cresce con il numero della frase (facile → medio → difficile).
+    const opzioni = eArcade() ? { ...opzioniEffettive(), livello: livelloArcade(stato.frasi.length) } : opzioniEffettive();
+    const frase = generaFrase(opzioni);
+    const inizio = stato.modello.length + aggiunta.length + separatore.length;
+    stato.frasi.push({ inizio, fine: inizio + frase.length });
+    aggiunta += separatore + frase;
   }
   const frammento = document.createDocumentFragment();
   for (const carattere of aggiunta) {
@@ -234,8 +288,9 @@ function statistiche() {
 
 function aggiornaStatistiche() {
   const { tempo, ppm, bpm, precisione } = statistiche();
-  const restanti = Math.max(0, impostazioni.durata - tempo / 1000);
+  const restanti = Math.max(0, (durataMs() - tempo) / 1000);
   el.tempo.textContent = Math.ceil(restanti);
+  if (eArcade()) aggiornaBarraTempo(restanti);
   el.ppm.textContent = ppm;
   el.bpm.textContent = bpm;
   el.precisione.textContent = precisione + "%";
@@ -245,6 +300,86 @@ function aggiornaStatistiche() {
 function tempoScaduto() {
   const t = trascorsoMs();
   return t !== null && t >= durataMs();
+}
+
+/* ---------- Modalità arcade ---------- */
+
+/* Barra del tempo: piena = tempo massimo accumulabile. Rossa e pulsante negli ultimi secondi. */
+function aggiornaBarraTempo(restanti) {
+  el.barraTempo.style.width = `${Math.min(100, (restanti * 1000 * 100) / ARCADE.TEMPO_MASSIMO)}%`;
+  el.barraTempo.classList.toggle("allarme", stato.inizio !== null && restanti <= SECONDI_ALLARME);
+}
+
+/* Punti, moltiplicatore e frasi in alto. */
+function aggiornaHud() {
+  const molt = moltiplicatore(stato.serie);
+  el.arcPunti.textContent = stato.punteggio;
+  el.arcMolt.textContent = `×${molt}`;
+  el.arcFrasi.textContent = stato.frasiCompletate;
+  const soglia = ARCADE.SOGLIE_SERIE.find((s) => s > stato.serie);
+  el.arcSerie.textContent = soglia === undefined
+    ? t("serieAlMassimo", { n: stato.serie })
+    : t("serieVerso", { n: stato.serie, m: molt + 1, soglia });
+  el.arcMolt.classList.toggle("acceso", molt > 1);
+}
+
+/* Scritta che compare e svanisce ("+6 s", "+50", "×2!"). */
+function popup(testo, tipo) {
+  const p = document.createElement("span");
+  p.className = `popup ${tipo}`;
+  p.textContent = testo;
+  el.popupZona.appendChild(p);
+  setTimeout(() => p.remove(), DURATA_POPUP);
+}
+
+/*
+ * Conta le parole appena completate. Una parola perfetta allunga la serie;
+ * quelle con errori l'hanno già accorciata al momento dell'errore. Si conta
+ * una parola solo quando è scritta giusta: con un errore ancora sul testo si
+ * aspetta che venga corretto.
+ */
+function controllaParole() {
+  const { modello, scritto } = stato;
+  while (stato.prossimaParola < modello.length) {
+    const inizio = stato.prossimaParola;
+    let fine = modello.indexOf(" ", inizio);
+    fine = fine === -1 ? modello.length : fine + 1;
+    if (scritto.length < fine || scritto.slice(inizio, fine) !== modello.slice(inizio, fine)) break;
+    let perfetta = true;
+    for (let i = inizio; i < fine; i++) if (stato.posizioniErrate.has(i)) { perfetta = false; break; }
+    if (perfetta) {
+      const prima = moltiplicatore(stato.serie);
+      stato.serie++;
+      stato.serieMax = Math.max(stato.serieMax, stato.serie);
+      const dopo = moltiplicatore(stato.serie);
+      if (dopo > prima) popup(`×${dopo}!`, "molt");
+    }
+    stato.prossimaParola = fine;
+  }
+}
+
+/*
+ * Premia le frasi appena completate (scritte giuste fino al punto finale):
+ * tempo in più e, se perfette, punti bonus. Una frase con errori ancora sul
+ * testo non dà niente finché non viene corretta: scrivere a caso non fa
+ * guadagnare tempo.
+ */
+function controllaFrasi() {
+  const { modello, scritto } = stato;
+  while (stato.prossimaFrase < stato.frasi.length) {
+    const { inizio, fine } = stato.frasi[stato.prossimaFrase];
+    if (scritto.length < fine || scritto.slice(inizio, fine) !== modello.slice(inizio, fine)) break;
+    let perfetta = true;
+    for (let i = inizio; i < fine; i++) if (stato.posizioniErrate.has(i)) { perfetta = false; break; }
+    const premio = premioFrase(fine - inizio, perfetta, moltiplicatore(stato.serie));
+    stato.scadenza = nuovaScadenza(stato.scadenza, performance.now(), premio.ms);
+    stato.punteggio += premio.punti;
+    stato.frasiCompletate++;
+    if (perfetta) stato.frasiPerfette++;
+    popup(`+${Math.round(premio.ms / 1000)} s`, "tempo");
+    if (premio.punti) popup(`+${premio.punti}`, "punti");
+    stato.prossimaFrase++;
+  }
 }
 
 /* ---------- Profili, record e punteggi ---------- */
@@ -267,8 +402,10 @@ function mostraProfili() {
 }
 
 /* Descrizione breve delle impostazioni di un test, per la cronologia. */
-function descriviImpostazioni(i) {
-  const parti = [`${i.durata} s`, t(i.livello), i.lingua.toUpperCase()];
+function descriviImpostazioni(i, test) {
+  const parti = i.modalita === "arcade"
+    ? [t("arcade"), t("puntiBreve", { n: test?.punteggio ?? 0 }), i.lingua.toUpperCase()]
+    : [`${i.durata} s`, t(i.livello), i.lingua.toUpperCase()];
   if (!i.punteggiatura) parti.push(t("tagMinuscole"));
   if (i.accenti) parti.push(t("tagAccenti"));
   return parti.join(" · ");
@@ -280,10 +417,12 @@ const formatoData = () => new Intl.DateTimeFormat(impostazioni.lingua, { dateSty
 function mostraPunteggi() {
   const p = profilo();
   const modalita = modalitaCorrente();
+  // Arcade: si confrontano i punti; classica: la velocità.
+  const campo = eArcade() ? "punteggio" : "ppm";
   el.titoloPunteggi.textContent = t("punteggi", { nome: p.nome });
   el.totTest.textContent = p.storico.length;
-  el.totRecord.textContent = migliore(p, modalita);
-  el.totMedia.textContent = mediaRecente(p, modalita) ?? "—";
+  el.totRecord.textContent = migliore(p, modalita, campo);
+  el.totMedia.textContent = mediaRecente(p, modalita, 10, campo) ?? "—";
 
   // Cronologia: dal più recente.
   const corpo = el.tabellaStorico.tBodies[0];
@@ -295,7 +434,7 @@ function mostraPunteggi() {
   for (const test of recenti) {
     const riga = corpo.insertRow();
     riga.insertCell().textContent = formato.format(test.data);
-    riga.insertCell().textContent = descriviImpostazioni(test.impostazioni);
+    riga.insertCell().textContent = descriviImpostazioni(test.impostazioni, test);
     riga.insertCell().textContent = test.ppm;
     riga.insertCell().textContent = test.precisione + "%";
     const cella = riga.insertCell();
@@ -309,7 +448,7 @@ function mostraPunteggi() {
   }
 
   // Tabella sfida: solo profili con risultati nelle impostazioni attuali.
-  const righe = classifica(profili, modalita);
+  const righe = classifica(profili, modalita, campo);
   const corpoSfida = el.tabellaSfida.tBodies[0];
   corpoSfida.textContent = "";
   el.nessunaSfida.hidden = righe.length > 0;
@@ -319,7 +458,7 @@ function mostraPunteggi() {
     if (r.id === p.id) riga.className = "tua-riga";
     riga.insertCell().textContent = i + 1;
     riga.insertCell().textContent = r.nome;
-    riga.insertCell().textContent = r.ppm;
+    riga.insertCell().textContent = r.valore;
     riga.insertCell().textContent = r.precisione ? r.precisione + "%" : "—";
   });
 }
@@ -387,6 +526,32 @@ function mostraErrori() {
   }
 }
 
+/* Sottosezione "serie di parole senza errori": numeri e striscia di pallini. */
+function mostraSerieParole({ sequenza, perfette, totale, serieMax }) {
+  el.resSerieMax.textContent = serieMax;
+  el.resPerfette.textContent = t("paroleSu", { perfette, totale });
+  el.resPercPerfette.textContent = totale ? Math.round((100 * perfette) / totale) + "%" : "—";
+
+  // Dove inizia la serie più lunga, per evidenziarla.
+  let inizioMax = -1, corrente = 0;
+  sequenza.forEach((p, i) => {
+    corrente = p ? corrente + 1 : 0;
+    if (serieMax > 0 && corrente === serieMax && inizioMax === -1) inizioMax = i - serieMax + 1;
+  });
+  // Le parole del testo nello stesso ordine della sequenza (separate da uno spazio).
+  const testi = stato.modello.split(" ");
+  el.strisciaParole.textContent = "";
+  el.strisciaParole.setAttribute("role", "img");
+  el.strisciaParole.setAttribute("aria-label", t("ariaStriscia", { perfette, totale, serie: serieMax }));
+  sequenza.forEach((perfetta, i) => {
+    const punto = document.createElement("span");
+    punto.className = "punto-parola " + (perfetta ? "perfetta" : "imperfetta");
+    if (i >= inizioMax && i < inizioMax + serieMax) punto.classList.add("serie-max");
+    punto.title = testi[i] || ""; // passando col mouse si vede la parola
+    el.strisciaParole.appendChild(punto);
+  });
+}
+
 function pulisciMappaErrori() {
   for (const t of Object.values(tasti)) {
     t.classList.remove("caldo");
@@ -413,6 +578,7 @@ function mostraTestoSopraTastiera() {
 
 function avviaTimer() {
   stato.inizio = performance.now();
+  if (eArcade()) stato.scadenza = stato.inizio + ARCADE.TEMPO_INIZIALE;
   // Modalità concentrazione: sul telefono, mentre scrivi, si nasconde tutto
   // tranne tempo, testo e "Ricomincia" (le regole sono in stile.css).
   document.body.classList.add("in-gioco");
@@ -429,6 +595,7 @@ function termina() {
 
   const { ppm, bpm, precisione } = statistiche();
   const serie = serieDelTest(stato.battute, durataMs());
+  const parole = serieParole(stato.modello, stato.scritto, stato.posizioniErrate);
   const salvato = salvaTest({
     data: Date.now(),
     modalita: modalitaCorrente(),
@@ -436,8 +603,26 @@ function termina() {
     ppm, bpm, precisione,
     errori: { ...stato.errori },
     serie,
+    // Riassunto delle serie (senza la striscia completa, per non appesantire lo storico).
+    parole: { perfette: parole.perfette, totale: parole.totale, serieMax: parole.serieMax },
+    ...(eArcade() ? {
+      punteggio: stato.punteggio,
+      arcade: {
+        frasi: stato.frasiCompletate, perfette: stato.frasiPerfette,
+        secondi: Math.round(durataMs() / 1000), serieMax: stato.serieMax,
+      },
+    } : {}),
   });
-  const record = migliore(profilo(), modalitaCorrente());
+  const record = migliore(profilo(), modalitaCorrente(), eArcade() ? "punteggio" : "ppm");
+  el.risultatoArcade.hidden = !eArcade();
+  if (eArcade()) {
+    el.resPunteggio.textContent = stato.punteggio;
+    el.resFrasi.textContent = stato.frasiCompletate;
+    el.resFrasiPerfette.textContent = stato.frasiPerfette;
+    el.resDurataArcade.textContent = Math.round(durataMs() / 1000);
+    el.resSerieArcade.textContent = stato.serieMax;
+    aggiornaBarraTempo(0);
+  }
 
   // Anche i riquadri in alto mostrano i valori finali, non l'ultimo aggiornamento.
   el.tempo.textContent = "0";
@@ -448,6 +633,7 @@ function termina() {
   el.resCaratteri.textContent = contaGiusti(stato.scritto, stato.modello);
   el.resRecord.textContent = record;
   mostraErrori();
+  mostraSerieParole(parole);
   el.areaTesto.hidden = true;
   el.risultato.hidden = false;
   el.avvisoSalvataggio.hidden = salvato;
@@ -458,7 +644,9 @@ function termina() {
   // digitati per inerzia lo premerebbero e il risultato sparirebbe.
   el.risultato.focus();
   // Per chi usa un lettore di schermo: un solo annuncio, a fine test.
-  el.annuncio.textContent = t("annuncio", { ppm, prec: precisione });
+  el.annuncio.textContent = eArcade()
+    ? t("annuncioArcade", { punti: stato.punteggio, frasi: stato.frasiCompletate })
+    : t("annuncio", { ppm, prec: precisione });
 }
 
 /* Riporta tutto allo stato iniziale con frasi nuove. */
@@ -473,7 +661,10 @@ function ricomincia() {
   el.annuncio.textContent = "";
   allungaTesto(MARGINE_TESTO * 3);
   coloraIntervallo(0, 0);
-  el.tempo.textContent = impostazioni.durata;
+  el.tempo.textContent = durataMs() / 1000;
+  el.popupZona.textContent = "";
+  aggiornaHud();
+  aggiornaBarraTempo(ARCADE.TEMPO_INIZIALE / 1000);
   el.ppm.textContent = "0";
   el.bpm.textContent = "0";
   el.precisione.textContent = "100%";
@@ -513,10 +704,20 @@ function suInput(evento) {
     stato.tastiPremuti++;
     const atteso = stato.modello[i];
     stato.battute.push({ t: performance.now() - stato.inizio, giusto: nuovo[i] === atteso });
-    if (nuovo[i] !== atteso) registraErrore(atteso, nuovo[i]);
+    if (nuovo[i] !== atteso) {
+      registraErrore(atteso, nuovo[i]);
+      stato.posizioniErrate.add(i);
+      // Arcade: l'errore accorcia subito la serie (azzerata o un gradino giù).
+      if (eArcade()) stato.serie = serieDopoErrore(stato.serie, classificaErrore(atteso, nuovo[i]));
+    } else if (eArcade() && !stato.posizioniPagate.has(i)) {
+      // Ogni carattere giusto vale 1 punto per il moltiplicatore, una volta sola.
+      stato.posizioniPagate.add(i);
+      stato.punteggio += moltiplicatore(stato.serie);
+    }
   }
 
   stato.scritto = nuovo;
+  if (eArcade()) { controllaParole(); controllaFrasi(); aggiornaHud(); }
   // Ricoloriamo solo la zona cambiata: con testi lunghi resta veloce.
   coloraIntervallo(comune - 1, Math.max(prima.length, nuovo.length));
 
@@ -725,6 +926,7 @@ el.siElimina.addEventListener("click", () => {
 });
 
 el.chiudiStorico.addEventListener("click", () => { el.pannelloStorico.hidden = true; });
+el.opzioniModalita.forEach((b) => b.addEventListener("click", () => cambia(() => { impostazioni.modalita = b.dataset.modalita; })));
 el.opzioniDurata.forEach((b) => b.addEventListener("click", () => cambia(() => { impostazioni.durata = Number(b.dataset.durata); })));
 el.opzioniLivello.forEach((b) => b.addEventListener("click", () => cambia(() => { impostazioni.livello = b.dataset.livello; })));
 el.punteggiatura.addEventListener("change", () => cambia(() => { impostazioni.punteggiatura = el.punteggiatura.checked; }));

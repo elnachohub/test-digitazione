@@ -58,13 +58,19 @@
 
     <!-- Impostazioni: ogni cambio fa ripartire il test con frasi nuove -->
     <section class="impostazioni" aria-label="Impostazioni">
+      <!-- Modalità: classica (durata fissa) o arcade (il tempo si guadagna) -->
       <div class="gruppo" role="group">
+        <span class="etichetta" data-t="modalita">Modalità</span>
+        <button class="opzione" data-modalita="classica" data-t="classica">Classica</button>
+        <button class="opzione" data-modalita="arcade" data-t="arcade">Arcade</button>
+      </div>
+      <div class="gruppo" role="group" id="gruppoDurata">
         <span class="etichetta" data-t="durata">Durata</span>
         <button class="opzione" data-durata="30">30 s</button>
         <button class="opzione" data-durata="60">60 s</button>
         <button class="opzione" data-durata="120">120 s</button>
       </div>
-      <div class="gruppo" role="group">
+      <div class="gruppo" role="group" id="gruppoLivello">
         <span class="etichetta" data-t="livello">Livello</span>
         <button class="opzione" data-livello="facile" data-t="facile">Facile</button>
         <button class="opzione" data-livello="medio" data-t="medio">Medio</button>
@@ -102,6 +108,18 @@
       <button class="opzione" id="ricominciaTest" type="button">↻ <span data-t="ricominciaTest">Ricomincia</span></button>
     </div>
 
+    <!-- Arcade: barra del tempo, punti, moltiplicatore della serie, frasi completate.
+         I "+3 s" e "+50" compaiono nella zona dei popup e svaniscono da soli. -->
+    <section class="hud-arcade" id="hudArcade" hidden>
+      <div class="barra-tempo"><div class="riempimento" id="barraTempo"></div></div>
+      <div class="hud-numeri">
+        <div><strong id="arcPunti">0</strong><span data-t="punti">punti</span></div>
+        <div><strong id="arcMolt">×1</strong><span id="arcSerie"></span></div>
+        <div><strong id="arcFrasi">0</strong><span data-t="frasiFatte">frasi</span></div>
+      </div>
+      <div class="popup-zona" id="popupZona" aria-hidden="true"></div>
+    </section>
+
     <!-- Testo da copiare. Il campo nascosto riceve i tasti (serve anche su mobile) -->
     <section class="area-testo" id="areaTesto" tabindex="-1">
       <div class="finestra"><div class="testo" id="testo"></div></div>
@@ -115,6 +133,16 @@
     <section class="risultato" id="risultato" tabindex="-1" hidden>
       <h2 data-t="risultato">Risultato</h2>
       <p class="avviso" id="avvisoSalvataggio" data-t="nonSalvato" hidden></p>
+      <!-- Solo arcade: il punteggio è il protagonista -->
+      <div class="risultato-arcade" id="risultatoArcade" hidden>
+        <div class="punteggio-finale"><strong id="resPunteggio">0</strong><span data-t="punteggio">punteggio</span></div>
+        <div class="numeri-arcade">
+          <div><strong id="resFrasi">0</strong><span data-t="frasiCompletate">frasi completate</span></div>
+          <div><strong id="resFrasiPerfette">0</strong><span data-t="frasiPerfette">frasi perfette</span></div>
+          <div><strong id="resDurataArcade">0</strong><span data-t="durataPartita">secondi di partita</span></div>
+          <div><strong id="resSerieArcade">0</strong><span data-t="serieMaxArcade">parole perfette di fila</span></div>
+        </div>
+      </div>
       <div class="statistiche">
         <div class="stat"><span id="resPpm" class="valore">0</span><span class="nome" data-t="paroleMin"></span></div>
         <div class="stat"><span id="resBpm" class="valore">0</span><span class="nome" data-t="battuteMin"></span></div>
@@ -142,6 +170,18 @@
           <h3 data-t="tastiSbagliati"></h3>
           <ol class="classifica" id="classifica"></ol>
         </div>
+      </div>
+
+      <!-- Serie di parole senza errori: quante di fila, quante in tutto, e dove si spezzano -->
+      <div class="serie-parole">
+        <h3 data-t="serieTitolo">Serie di parole senza errori</h3>
+        <div class="numeri-serie">
+          <div><strong id="resSerieMax">0</strong><span data-t="serieLunga"></span></div>
+          <div><strong id="resPerfette">0</strong><span data-t="parolePerfette"></span></div>
+          <div><strong id="resPercPerfette">0%</strong><span data-t="senzaErrori"></span></div>
+        </div>
+        <div class="striscia" id="strisciaParole"></div>
+        <p class="nota" data-t="notaSerie"></p>
       </div>
       <button class="primario" id="ricomincia"><span data-t="nuovaPartita">Nuova partita</span> <kbd>Tab</kbd></button>
     </section>
@@ -180,7 +220,7 @@
           <p class="nota" data-t="sfidaNota"></p>
           <p class="nota" id="nessunaSfida" data-t="nessunaSfida"></p>
           <div class="scorri"><table class="tabella" id="tabellaSfida">
-            <thead><tr><th>#</th><th data-t="nome"></th><th data-t="paroleMin"></th><th data-t="precisione"></th></tr></thead>
+            <thead><tr><th>#</th><th data-t="nome"></th><th id="thValoreSfida"></th><th data-t="precisione"></th></tr></thead>
             <tbody></tbody>
           </table></div>
         </div>
