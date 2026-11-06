@@ -194,7 +194,12 @@ async function principale() {
   }
 }
 
-principale().catch((e) => {
-  console.error("\nErrore:", e.message);
-  process.exit(1);
-});
+// Usato anche dagli attrezzi della squadra video (fotogrammi.js).
+module.exports = { incorporaImmagini, leggiMarche, MIME };
+
+if (require.main === module) {
+  principale().catch((e) => {
+    console.error("\nErrore:", e.message);
+    process.exit(1);
+  });
+}

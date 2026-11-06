@@ -26,6 +26,31 @@
     risorse = await StudioVideo.caricaRisorse(p);
     return { w, h, durata: StudioVideo.durataTotale(p) };
   };
+  // Foglio di provini: tanti fotogrammi in un'immagine sola, con il tempo scritto sotto.
+  window.foglio = (tempi, colonne, larghezza) => {
+    const { w, h } = StudioVideo.dimensioni(progetto);
+    const lw = larghezza;
+    const lh = Math.round((h / w) * lw);
+    const righe = Math.ceil(tempi.length / colonne);
+    const etichetta = 28;
+    const c = document.createElement("canvas");
+    c.width = colonne * lw + (colonne + 1) * 8;
+    c.height = righe * (lh + etichetta) + (righe + 1) * 8;
+    const x = c.getContext("2d");
+    x.fillStyle = "#222";
+    x.fillRect(0, 0, c.width, c.height);
+    tempi.forEach((t, i) => {
+      StudioVideo.disegna(ctx, progetto, risorse, t);
+      const cx = 8 + (i % colonne) * (lw + 8);
+      const cy = 8 + Math.floor(i / colonne) * (lh + etichetta + 8);
+      x.drawImage(tela, cx, cy, lw, lh);
+      const v = StudioVideo.scenaA(progetto, t);
+      x.fillStyle = "#fff";
+      x.font = "600 15px sans-serif";
+      x.fillText(`${t.toFixed(1)} s · scena ${v.indice + 1} (${v.scena.tipo})`, cx + 2, cy + lh + 19);
+    });
+    return c.toDataURL("image/jpeg", 0.88);
+  };
   window.fotogramma = (t, qualita) => {
     StudioVideo.disegna(ctx, progetto, risorse, t);
     return tela.toDataURL("image/jpeg", qualita);
