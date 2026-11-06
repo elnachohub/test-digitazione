@@ -75,7 +75,7 @@
     },
     {
       "tipo": "tutorial",
-      "durata": 5,
+      "durata": 5.5,
       "titolo": "3. Guarda il risultato",
       "immagine": "sito/stato-3-risultati.jpg",
       "zoom": true,
@@ -95,7 +95,7 @@
     },
     {
       "tipo": "tutorial",
-      "durata": 5,
+      "durata": 5.5,
       "titolo": "4. Capisci dove sbagli",
       "immagine": "sito/stato-4-grafico.jpg",
       "zoom": true,
@@ -115,7 +115,7 @@
     },
     {
       "tipo": "punti",
-      "durata": 6,
+      "durata": 5.7,
       "titolo": "In tre passi",
       "punti": [
         "Scegli durata e livello",
@@ -125,7 +125,7 @@
     },
     {
       "tipo": "cta",
-      "durata": 4,
+      "durata": 4.2,
       "titolo": "Ora tocca a te: quanto sei veloce?",
       "pulsante": "Fai il test",
       "url": "elnachohub.github.io/test-digitazione",
