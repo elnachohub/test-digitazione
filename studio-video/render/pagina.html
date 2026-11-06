@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Studio Video — pagina di rendering</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+</head>
+<body>
+<!-- Pagina usata solo da render.js: disegna i fotogrammi uno per uno. -->
+<canvas id="tela"></canvas>
+<script src="../js/motore.js"></script>
+<script>
+  "use strict";
+  let progetto = null;
+  let risorse = null;
+  const tela = document.getElementById("tela");
+  const ctx = tela.getContext("2d");
+  window.prepara = async (p) => {
+    progetto = p;
+    const { w, h } = StudioVideo.dimensioni(p);
+    tela.width = w;
+    tela.height = h;
+    await document.fonts.ready;
+    risorse = await StudioVideo.caricaRisorse(p);
+    return { w, h, durata: StudioVideo.durataTotale(p) };
+  };
+  window.fotogramma = (t, qualita) => {
+    StudioVideo.disegna(ctx, progetto, risorse, t);
+    return tela.toDataURL("image/jpeg", qualita);
+  };
+</script>
+</body>
+</html>

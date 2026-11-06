@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Studio Video — video promozionali e tutorial per siti</title>
+<meta name="description" content="Crea in pochi minuti video promozionali, presentazioni e tutorial per il tuo sito, in tutti i formati social.">
+<link rel="stylesheet" href="css/editor.css">
+</head>
+<body>
+<header class="testata">
+  <div class="marchio-app"><span class="logo-app">▶</span> Studio Video</div>
+  <input id="nome-progetto" class="nome-progetto" type="text" aria-label="Nome del progetto" spellcheck="false">
+  <nav class="azioni">
+    <button id="apri-generatore" class="pulsante principale-chiaro" type="button">✦ Generatore rapido</button>
+    <button id="apri-file" class="pulsante" type="button" title="Apri un progetto .json">Apri</button>
+    <button id="salva-file" class="pulsante" type="button" title="Scarica il progetto come .json">Salva</button>
+    <button id="copertina" class="pulsante" type="button" title="Scarica il fotogramma attuale come immagine">Copertina PNG</button>
+    <button id="apri-esporta" class="pulsante principale" type="button">Esporta video</button>
+  </nav>
+  <input id="file-progetto" type="file" accept=".json,application/json" hidden>
+</header>
+
+<main class="griglia">
+  <!-- Colonna sinistra: progetto e scene -->
+  <aside class="pannello" aria-label="Progetto e scene">
+    <section class="gruppo">
+      <h2>Progetto</h2>
+      <label class="campo">Formato <select id="formato"></select></label>
+      <div class="due">
+        <label class="campo">Tema <select id="tema"></select></label>
+        <label class="campo">Accento <input id="accento" type="color"></label>
+      </div>
+      <div class="due">
+        <label class="campo">Carattere <select id="carattere"></select></label>
+        <label class="campo">Transizione <select id="transizione"></select></label>
+      </div>
+    </section>
+
+    <section class="gruppo">
+      <h2>Marchio</h2>
+      <label class="campo">Nome <input id="marchio-nome" type="text" placeholder="Es. Prenotalo"></label>
+      <label class="campo">Indirizzo del sito <input id="marchio-url" type="url" placeholder="https://..."></label>
+      <div class="campo">Logo
+        <div class="immagine-campo" id="marchio-logo"></div>
+      </div>
+    </section>
+
+    <section class="gruppo">
+      <h2>Musica</h2>
+      <div class="musica">
+        <span id="musica-nome" class="tenue">Nessuna musica</span>
+        <label class="pulsante piccolo">Scegli…<input id="musica-file" type="file" accept="audio/*" hidden></label>
+        <button id="musica-togli" class="pulsante piccolo" type="button" hidden>Togli</button>
+      </div>
+      <label class="campo">Volume <input id="volume" type="range" min="0" max="1" step="0.05"></label>
+      <p class="nota">Usa solo musica di cui hai i diritti (librerie royalty-free).</p>
+    </section>
+
+    <section class="gruppo">
+      <div class="titolo-gruppo">
+        <h2>Scene</h2>
+        <span id="durata-totale" class="tenue"></span>
+      </div>
+      <ol id="elenco-scene" class="elenco-scene"></ol>
+      <div class="aggiungi">
+        <select id="nuova-scena" aria-label="Tipo di scena da aggiungere"></select>
+        <button id="aggiungi-scena" class="pulsante" type="button">+ Aggiungi</button>
+      </div>
+    </section>
+  </aside>
+
+  <!-- Centro: anteprima -->
+  <section class="palco" aria-label="Anteprima">
+    <div class="cornice-tela" id="cornice-tela">
+      <canvas id="tela" width="1920" height="1080"></canvas>
+      <div id="suggerimento-tutorial" class="suggerimento" hidden>Clicca sull'anteprima per aggiungere un passo · trascina i numeri per spostarli</div>
+    </div>
+    <div class="comandi">
+      <button id="riproduci" class="pulsante tondo" type="button" aria-label="Riproduci">▶</button>
+      <span id="tempo" class="tempo">0:00 / 0:00</span>
+      <input id="cursore-tempo" class="cursore-tempo" type="range" min="0" max="1000" value="0" aria-label="Posizione nel video">
+    </div>
+    <div id="linea-tempo" class="linea-tempo" aria-label="Scene nel tempo"></div>
+  </section>
+
+  <!-- Colonna destra: proprietà della scena -->
+  <aside class="pannello" aria-label="Proprietà della scena">
+    <section class="gruppo">
+      <h2 id="titolo-proprieta">Scena</h2>
+      <div id="proprieta"></div>
+    </section>
+  </aside>
+</main>
+
+<!-- Generatore rapido -->
+<dialog id="generatore" class="finestra">
+  <form method="dialog" id="modulo-generatore">
+    <h2>Generatore rapido</h2>
+    <p class="tenue">Pochi dati, video già montato. Poi lo ritocchi scena per scena.</p>
+    <fieldset class="modelli" id="scelta-modello"></fieldset>
+    <div class="due">
+      <label class="campo">Nome del sito o prodotto <input name="nome" type="text" required placeholder="Es. Prenotalo"></label>
+      <label class="campo">Indirizzo <input name="url" type="text" placeholder="prenotalo.it"></label>
+    </div>
+    <label class="campo">Slogan (la promessa in una frase) <input name="slogan" type="text" placeholder="Es. Prenotazioni online senza telefonate"></label>
+    <label class="campo"><span id="etichetta-vantaggi">Vantaggi (uno per riga, massimo 5)</span>
+      <textarea name="vantaggi" rows="4" placeholder="Agenda sempre aggiornata&#10;Promemoria automatici ai clienti&#10;Pagamenti anticipati"></textarea>
+    </label>
+    <div class="due">
+      <label class="campo">Testo del pulsante <input name="invito" type="text" placeholder="Es. Prova gratis"></label>
+      <label class="campo">Formato <select name="formato" id="gen-formato"></select></label>
+    </div>
+    <div class="due">
+      <label class="campo">Tema <select name="tema" id="gen-tema"></select></label>
+      <label class="campo">Carattere <select name="carattere" id="gen-carattere"></select></label>
+    </div>
+    <div class="due">
+      <div class="campo">Schermata del sito (facoltativa) <div class="immagine-campo" id="gen-immagine"></div></div>
+      <div class="campo">Logo (facoltativo) <div class="immagine-campo" id="gen-logo"></div></div>
+    </div>
+    <p class="nota">Il progetto attuale verrà sostituito. Salvalo prima se ti serve.</p>
+    <div class="fondo-finestra">
+      <button class="pulsante" value="annulla" type="submit" formnovalidate>Annulla</button>
+      <button class="pulsante principale" value="crea" type="submit">Crea il video</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Esportazione -->
+<dialog id="esporta" class="finestra">
+  <form method="dialog" id="modulo-esporta">
+    <h2>Esporta video</h2>
+    <p class="tenue">Scegli i formati: lo stesso video viene impaginato per ognuno.</p>
+    <fieldset class="formati" id="scelta-formati"></fieldset>
+    <p class="nota" id="nota-codec"></p>
+    <div id="avanzamento" class="avanzamento" hidden>
+      <div class="barra"><div id="barra-piena"></div></div>
+      <span id="testo-avanzamento"></span>
+    </div>
+    <ul id="risultati" class="risultati"></ul>
+    <p class="nota">La registrazione avviene in tempo reale: tieni questa scheda in primo piano. Per MP4 perfetti in serie usa il comando <code>npm run render</code> (vedi README).</p>
+    <div class="fondo-finestra">
+      <button class="pulsante" value="chiudi" type="submit" id="chiudi-esporta">Chiudi</button>
+      <button class="pulsante principale" type="button" id="avvia-esporta">Registra</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="js/motore.js"></script>
+<script src="js/modelli.js"></script>
+<script src="js/archivio.js"></script>
+<script src="js/editor.js"></script>
+</body>
+</html>

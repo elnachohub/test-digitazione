@@ -1,0 +1,19 @@
+{
+  "name": "studio-video",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Video promozionali, presentazioni e tutorial per siti web, in tutti i formati social.",
+  "license": "UNLICENSED",
+  "scripts": {
+    "avvia": "python3 -m http.server 8000",
+    "render": "node render/render.js",
+    "esempi": "node esempi/genera.js",
+    "esempi:video": "node render/render.js esempi/promo.json esempi/presentazione.json esempi/tutorial.json --tutti"
+  },
+  "devDependencies": {
+    "playwright": "^1.48.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

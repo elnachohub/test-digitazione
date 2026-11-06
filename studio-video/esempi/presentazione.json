@@ -1,0 +1,86 @@
+{
+  "versione": 1,
+  "nome": "Prenotalo",
+  "formato": "16:9",
+  "tema": "notte",
+  "accento": "",
+  "carattere": "moderno",
+  "transizione": "dissolvenza",
+  "marchio": {
+    "nome": "Prenotalo",
+    "url": "https://prenotalo.example",
+    "logo": ""
+  },
+  "musica": "",
+  "volume": 0.8,
+  "scene": [
+    {
+      "tipo": "titolo",
+      "durata": 3.5,
+      "etichetta": "",
+      "titolo": "Prenotalo",
+      "sottotitolo": "Prenotazioni online senza telefonate"
+    },
+    {
+      "tipo": "schermata",
+      "durata": 5.5,
+      "titolo": "Prenotazioni online senza telefonate",
+      "testo": "Scopri come funziona in pochi secondi.",
+      "immagine": "",
+      "dispositivo": "browser",
+      "scorri": true,
+      "url": "https://prenotalo.example"
+    },
+    {
+      "tipo": "punti",
+      "durata": 6,
+      "titolo": "Cosa ottieni",
+      "punti": [
+        "Agenda sempre aggiornata",
+        "Promemoria automatici ai clienti",
+        "Pagamenti anticipati, zero buchi"
+      ]
+    },
+    {
+      "tipo": "numeri",
+      "durata": 4.5,
+      "titolo": "I risultati parlano",
+      "valori": [
+        {
+          "valore": "1200",
+          "prefisso": "",
+          "suffisso": "+",
+          "etichetta": "clienti soddisfatti"
+        },
+        {
+          "valore": "4.9",
+          "prefisso": "",
+          "suffisso": "/5",
+          "etichetta": "valutazione media"
+        },
+        {
+          "valore": "24",
+          "prefisso": "",
+          "suffisso": "h",
+          "etichetta": "assistenza"
+        }
+      ]
+    },
+    {
+      "tipo": "citazione",
+      "durata": 5,
+      "testo": "Ci ha fatto risparmiare ore ogni settimana. Non torneremmo mai indietro.",
+      "autore": "Giulia R.",
+      "ruolo": "Titolare, Studio Rossi",
+      "stelle": 5
+    },
+    {
+      "tipo": "cta",
+      "durata": 4,
+      "titolo": "Pronto a iniziare?",
+      "pulsante": "Prova gratis 14 giorni",
+      "url": "https://prenotalo.example",
+      "clic": true
+    }
+  ]
+}

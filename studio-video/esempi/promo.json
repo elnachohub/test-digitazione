@@ -1,0 +1,53 @@
+{
+  "versione": 1,
+  "nome": "Prenotalo",
+  "formato": "9:16",
+  "tema": "tramonto",
+  "accento": "",
+  "carattere": "moderno",
+  "transizione": "dissolvenza",
+  "marchio": {
+    "nome": "Prenotalo",
+    "url": "https://prenotalo.example",
+    "logo": ""
+  },
+  "musica": "",
+  "volume": 0.8,
+  "scene": [
+    {
+      "tipo": "titolo",
+      "durata": 3,
+      "etichetta": "Novità",
+      "titolo": "Prenotazioni online senza telefonate",
+      "sottotitolo": "Prenotalo"
+    },
+    {
+      "tipo": "punti",
+      "durata": 4.5,
+      "titolo": "In 3 parole?",
+      "punti": [
+        "Agenda sempre aggiornata",
+        "Promemoria automatici ai clienti",
+        "Pagamenti anticipati, zero buchi"
+      ]
+    },
+    {
+      "tipo": "schermata",
+      "durata": 4,
+      "titolo": "",
+      "testo": "",
+      "immagine": "",
+      "dispositivo": "telefono",
+      "scorri": true,
+      "url": "https://prenotalo.example"
+    },
+    {
+      "tipo": "cta",
+      "durata": 3.5,
+      "titolo": "Provalo adesso",
+      "pulsante": "Prova gratis 14 giorni",
+      "url": "https://prenotalo.example",
+      "clic": true
+    }
+  ]
+}
