@@ -30,6 +30,14 @@ nel browser, e un comando produce MP4 perfetti in serie.
   nascondere, **Ctrl+Z / Ctrl+Maiusc+Z** per annullare e ripetere.
   Ogni scena può avere animazione e sfondo propri (colore o foto con velo).
   I ritocchi finiscono identici nel video esportato.
+- **Database delle marche** (il kit di ogni cliente): sistemi un video come
+  piace al cliente, premi *Salva come marca*, e da lì ogni nuovo video di
+  quel cliente nasce con look, ritocchi, logo, slogan, vantaggi e pulsante già
+  al loro posto. Ricerca, ordinamento, anteprime, duplica, note interne,
+  import/export in `.json` (backup e passaggio tra computer).
+- **Stampa unione**: nei testi di un modello scrivi `{nome}`, `{slogan}`,
+  `{invito}`, `{sito}`, `{vantaggio1}`… (o `{vantaggi}` su una riga dei punti)
+  e ogni marca ci mette i suoi.
 - **Esporta** dal browser (MP4 su Chrome/Edge, altrimenti WebM) oppure da riga
   di comando (MP4 H.264 + AAC, fotogramma per fotogramma, compatibile ovunque).
 - **Copertina PNG** dal fotogramma attuale (miniature YouTube, anteprime).
@@ -66,6 +74,15 @@ npm run render -- mio-progetto.json --tutti  # 16:9, 9:16, 1:1, 4:5
 npm run render -- a.json b.json c.json --formati 9:16 --musica brano.mp3 --uscita video/
 ```
 
+**Un modello × tutte le marche** (il moltiplicatore): esporta le marche
+dall'editor e lancia
+
+```bash
+npm run render -- modello.json --marca marche.json            # un video per marca
+npm run render -- modello.json --marca marche.json --solo forno --tutti
+npm run esempi:marche                                         # demo: 3 clienti, 3 video
+```
+
 Nel JSON le immagini possono essere data URL (come le salva l'editor),
 indirizzi `https://` o percorsi di file relativi al JSON: così puoi generare
 decine di video da modelli scritti a mano o da uno script.
@@ -81,13 +98,19 @@ studio-video/
 ├── js/
 │   ├── motore.js       disegna un fotogramma all'istante t (cuore di tutto)
 │   ├── modelli.js      tipi di scena e generatori dei 3 modelli
-│   ├── archivio.js     salvataggio automatico (IndexedDB)
-│   └── editor.js       interfaccia
+│   ├── marca.js        logica delle marche e stampa unione (browser + Node)
+│   ├── archivio.js     IndexedDB: progetto aperto + database marche (SV.marche)
+│   ├── editor.js       interfaccia
+│   └── libreria.js     finestra delle marche
 ├── render/
 │   ├── render.js       rendering MP4 con Playwright + ffmpeg
 │   └── pagina.html     pagina usata da render.js
 └── esempi/             progetti d'esempio (rigenerabili: npm run esempi)
 ```
+
+Le marche passano solo da `SV.marche` (in `js/archivio.js`): per portarle su
+un server con account basta un oggetto con gli stessi metodi che chiama le
+API, senza toccare l'editor.
 
 Il motore è una funzione pura del tempo: stesso progetto + stesso istante =
 stessa immagine. Anteprima, esportazione dal browser e rendering MP4 usano lo

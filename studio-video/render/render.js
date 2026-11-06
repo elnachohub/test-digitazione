@@ -9,6 +9,9 @@
  *   --tutti                   tutti i formati: 16:9, 9:16, 1:1, 4:5
  *   --uscita cartella         dove salvare gli MP4 (predefinito: ./video)
  *   --musica file.mp3         colonna sonora (sostituisce quella del progetto)
+ *   --marca marche.json       applica le marche del file (esportato dall'editor):
+ *                             un video per OGNI marca, stesso modello
+ *   --solo "Nome"             con --marca: solo le marche il cui nome contiene il testo
  *   --fps 30                  fotogrammi al secondo
  *   --qualita 20              CRF di x264: più basso = più qualità (18-28)
  *
@@ -27,7 +30,7 @@ const FORMATI = ["16:9", "9:16", "1:1", "4:5"];
 const MIME = { ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".gif": "image/gif", ".svg": "image/svg+xml" };
 
 function leggiArgomenti(argv) {
-  const opz = { file: [], formati: null, uscita: "video", musica: null, fps: 30, qualita: 20 };
+  const opz = { file: [], formati: null, uscita: "video", musica: null, fps: 30, qualita: 20, marca: null, solo: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const valore = () => {
@@ -38,6 +41,8 @@ function leggiArgomenti(argv) {
     else if (a === "--tutti") opz.formati = FORMATI.slice();
     else if (a === "--uscita") opz.uscita = valore();
     else if (a === "--musica") opz.musica = valore();
+    else if (a === "--marca" || a === "--marche") opz.marca = valore();
+    else if (a === "--solo") opz.solo = valore().toLowerCase();
     else if (a === "--fps") opz.fps = Math.max(10, Math.min(60, Number(valore()) || 30));
     else if (a === "--qualita") opz.qualita = Number(valore()) || 20;
     else if (a === "-h" || a === "--aiuto" || a === "--help") opz.aiuto = true;
@@ -84,11 +89,30 @@ function fileMusica(progetto, opz, cartella, tmp) {
   return fs.existsSync(pieno) ? pieno : null;
 }
 
-function nomeFile(progetto, formato, fileJson) {
-  const baseNome = (progetto.nome || path.basename(fileJson, ".json"))
-    .toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "video";
-  return `${baseNome}-${formato.replace(":", "x")}.mp4`;
+const sicuro = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+  .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+function nomeFile(progetto, formato, fileJson, marca) {
+  const modello = path.basename(fileJson, ".json");
+  const baseNome = marca ? `${sicuro(marca.nome)}-${sicuro(modello)}` : sicuro(progetto.nome || modello);
+  return `${baseNome || "video"}-${formato.replace(":", "x")}.mp4`;
+}
+
+// Marche dal file esportato dall'editor (una o tante).
+function leggiMarche(file, solo) {
+  require("../js/marca.js");
+  const SV = globalThis.StudioVideo;
+  const cartella = path.dirname(path.resolve(file));
+  let marche = SV.leggiFileMarche(JSON.parse(fs.readFileSync(file, "utf8")));
+  if (solo) marche = marche.filter((m) => m.nome.toLowerCase().includes(solo));
+  if (!marche.length) throw new Error(`Nessuna marca${solo ? ` con "${solo}" nel nome` : ""} in ${file}`);
+  for (const m of marche) {
+    if (m.logo && !/^(data:|https?:)/i.test(m.logo)) {
+      const pieno = path.resolve(cartella, m.logo);
+      m.logo = fs.existsSync(pieno) ? `data:${MIME[path.extname(pieno).toLowerCase()] || "image/png"};base64,${fs.readFileSync(pieno).toString("base64")}` : "";
+    }
+  }
+  return marche;
 }
 
 async function renderizza(pagina, progetto, formato, destinazione, opz, musica) {
@@ -146,17 +170,25 @@ async function principale() {
     const pagina = await browser.newPage();
     pagina.on("pageerror", (e) => console.error("  errore nella pagina:", e.message));
     await pagina.goto(pathToFileURL(path.join(__dirname, "pagina.html")).href);
+    const marche = opz.marca ? leggiMarche(opz.marca, opz.solo) : [null];
+    if (opz.marca) console.log(`${marche.length} marche da ${opz.marca}`);
+    let fatti = 0;
     for (const file of opz.file) {
       const cartella = path.dirname(path.resolve(file));
-      const progetto = incorporaImmagini(JSON.parse(fs.readFileSync(file, "utf8")), cartella);
-      const musica = fileMusica(progetto, opz, cartella, require("os").tmpdir());
-      console.log(`• ${file}${musica ? `  (musica: ${path.basename(musica)})` : ""}`);
-      for (const formato of opz.formati || [progetto.formato || "16:9"]) {
-        const destinazione = path.join(opz.uscita, nomeFile(progetto, formato, file));
-        await renderizza(pagina, progetto, formato, destinazione, opz, musica);
-        console.log(`    → ${destinazione}`);
+      const originale = incorporaImmagini(JSON.parse(fs.readFileSync(file, "utf8")), cartella);
+      const musica = fileMusica(originale, opz, cartella, require("os").tmpdir());
+      for (const marca of marche) {
+        const progetto = marca ? globalThis.StudioVideo.applicaMarca(JSON.parse(JSON.stringify(originale)), marca) : originale;
+        console.log(`• ${file}${marca ? `  [${marca.nome}]` : ""}${musica ? `  (musica: ${path.basename(musica)})` : ""}`);
+        for (const formato of opz.formati || [(marca && marca.formato) || progetto.formato || "16:9"]) {
+          const destinazione = path.join(opz.uscita, nomeFile(progetto, formato, file, marca));
+          await renderizza(pagina, progetto, formato, destinazione, opz, musica);
+          console.log(`    → ${destinazione}`);
+          fatti++;
+        }
       }
     }
+    console.log(`\n${fatti} video pronti in ${path.resolve(opz.uscita)}`);
   } finally {
     await browser.close();
   }

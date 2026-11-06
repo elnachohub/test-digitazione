@@ -470,6 +470,7 @@
     campoImmagine($("#marchio-logo"), p.marchio?.logo, (v) => modifica(() => (p.marchio.logo = v)), true);
     $("#volume").value = String(p.volume ?? 0.8);
     mostraMusica();
+    if (SV.libreria) SV.libreria.mostraStato();
   }
 
   function mostraMusica() {
@@ -774,6 +775,7 @@
       ]),
     ];
     for (const [k, tipo, etichetta, opz = {}] of SCHEMI[sc.tipo] || []) campi.push(creaCampo(sc, k, tipo, etichetta, opz));
+    campi.push(elemento("p", { classe: "nota", testo: "Modello per tante marche? Nei testi scrivi {nome} {slogan} {invito} {sito} {vantaggio1}… (o {vantaggi} su una riga dei punti): applicando una marca diventano i suoi testi." }));
     box.replaceChildren(...campi);
     mostraStileScena();
     firmaElementi = "";
@@ -1175,6 +1177,44 @@
 
   const datiGeneratore = { immagine: "", logo: "" };
 
+  // Elenco marche nel generatore (si aggiorna a ogni apertura).
+  async function riempiMarcheGeneratore(scelta) {
+    const marche = SV.libreria ? SV.cercaMarche(await SV.libreria.tutte(), "", "recenti") : [];
+    const sel = $("#gen-marca");
+    sel.replaceChildren(
+      elemento("option", { value: "", testo: marche.length ? "— Nessuna, parto da zero —" : "— Nessuna marca salvata —" }),
+      ...marche.map((m) => elemento("option", { value: m.id, testo: m.url ? `${m.nome} · ${m.url.replace(/^https?:\/\//, "")}` : m.nome })),
+    );
+    sel.value = scelta && marche.some((m) => m.id === scelta) ? scelta : "";
+    $("#riga-gen-marca").classList.toggle("con-marca", Boolean(sel.value));
+  }
+
+  // Scegliendo una marca, il modulo si riempie con i suoi dati.
+  function compilaDaMarca(id) {
+    const m = id && SV.libreria ? SV.libreria.trova(id) : null;
+    $("#riga-gen-marca").classList.toggle("con-marca", Boolean(m));
+    if (!m) return;
+    const f = $("#modulo-generatore");
+    const d = SV.datiDaMarca(m);
+    f.nome.value = d.nome;
+    f.url.value = d.url;
+    f.slogan.value = d.slogan;
+    f.vantaggi.value = d.vantaggi;
+    f.invito.value = d.invito;
+    if (SV.TEMI[d.tema]) f.tema.value = d.tema;
+    if (SV.CARATTERI[d.carattere]) f.carattere.value = d.carattere;
+    if (SV.FORMATI[d.formato]) f.formato.value = d.formato;
+    datiGeneratore.logo = d.logo;
+    campoImmagine($("#gen-logo"), d.logo, (v) => (datiGeneratore.logo = v), true);
+  }
+
+  async function apriGeneratore(marcaId) {
+    $("#generatore").returnValue = "";
+    await riempiMarcheGeneratore(marcaId);
+    if (marcaId) compilaDaMarca(marcaId);
+    $("#generatore").showModal();
+  }
+
   function preparaGeneratore() {
     const fs = $("#scelta-modello");
     fs.replaceChildren(
@@ -1195,10 +1235,8 @@
     campoImmagine($("#gen-immagine"), "", (v) => (datiGeneratore.immagine = v));
     campoImmagine($("#gen-logo"), "", (v) => (datiGeneratore.logo = v), true);
 
-    $("#apri-generatore").addEventListener("click", () => {
-      $("#generatore").returnValue = "";
-      $("#generatore").showModal();
-    });
+    $("#apri-generatore").addEventListener("click", () => apriGeneratore(stato.progetto.marcaId || ""));
+    $("#gen-marca").addEventListener("change", (e) => compilaDaMarca(e.target.value));
     $("#generatore").addEventListener("close", () => {
       if ($("#generatore").returnValue !== "crea") return;
       const f = $("#modulo-generatore");
@@ -1215,7 +1253,21 @@
         logo: datiGeneratore.logo,
       };
       registraStoria(null);
-      carica(SV.MODELLI[f.modello.value].crea(dati));
+      const nuovo = SV.MODELLI[f.modello.value].crea(dati);
+      const marca = f.marca.value && SV.libreria ? SV.libreria.trova(f.marca.value) : null;
+      if (marca) {
+        // look e ritocchi della marca; ciò che hai cambiato nel modulo vince
+        SV.applicaMarca(nuovo, marca);
+        nuovo.marchio = { nome: dati.nome || marca.nome, url: dati.url, logo: dati.logo };
+        if (dati.tema !== marca.tema) {
+          nuovo.tema = dati.tema;
+          nuovo.accento = "";
+        }
+        if (dati.carattere !== marca.carattere) nuovo.carattere = dati.carattere;
+        nuovo.formato = dati.formato;
+        SV.libreria.segnaUso(marca.id);
+      }
+      carica(nuovo);
     });
   }
 
@@ -1350,6 +1402,24 @@
       ridisegna();
     });
   }
+
+  // ------------------------------------------- API per la libreria marche
+
+  SV.editor = {
+    progetto: () => stato.progetto,
+    modifica,
+    campoImmagine,
+    elemento,
+    scarica,
+    nomeSicuro,
+    apriGeneratore,
+    aggiornaTutto() {
+      mostraProgetto();
+      mostraScene();
+      mostraProprieta();
+      SV.caricaRisorse(stato.progetto, stato.risorse).then(ridisegna);
+    },
+  };
 
   // ---------------------------------------------------------- avvio
 

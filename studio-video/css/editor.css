@@ -409,6 +409,94 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   border-radius: 3px;
 }
 
+/* -------------------------------------------------------------- marche */
+
+.pulsante.menta { background: var(--menta); }
+.pulsante.menta:hover { background: #b8ffd6; }
+.marca-attuale { margin-bottom: 12px; }
+.marca-attuale .nota { margin: 0 0 8px; }
+.marca-collegata {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: var(--bordo);
+  border-radius: 10px;
+  background: var(--menta);
+  padding: 6px;
+  margin-bottom: 8px;
+  box-shadow: var(--ombra-piccola);
+}
+.marca-collegata img { width: 64px; height: 36px; object-fit: cover; border: var(--bordo); border-radius: 5px; }
+.marca-collegata small { display: block; font-size: 11px; font-weight: 700; }
+.marca-collegata strong { font-size: 14px; }
+.azioni-marca-attuale { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.finestra.larga { width: min(1040px, 96vw); }
+.testa-libreria { display: flex; align-items: center; gap: 12px; }
+.testa-libreria h2 { margin: 0; }
+.conta-marche { font-family: "SV Space", monospace; font-weight: 700; background: var(--giallo); border: var(--bordo); border-radius: 6px; padding: 1px 8px; }
+.testa-libreria .pulsante { margin-left: auto; }
+.barra-libreria { display: flex; gap: 10px; margin: 14px 0 10px; }
+.barra-libreria input, .barra-libreria select {
+  border: var(--bordo);
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: #fff;
+  font-size: 14px;
+}
+.barra-libreria input { flex: 1; min-width: 0; }
+.azioni-libreria { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.griglia-marche {
+  list-style: none;
+  padding: 4px 6px 6px 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+  max-height: 56vh;
+  overflow-y: auto;
+}
+.scheda-marca {
+  display: flex;
+  flex-direction: column;
+  border: var(--bordo);
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+  transition: transform .08s, box-shadow .08s;
+}
+.scheda-marca:hover { transform: translate(-2px, -2px); box-shadow: var(--ombra); }
+.scheda-marca.attiva { outline: 4px solid var(--menta); outline-offset: -2px; }
+.anteprima-marca {
+  aspect-ratio: 16 / 9;
+  border-bottom: var(--bordo);
+  background: var(--carta-2);
+  display: grid;
+  place-items: center;
+  font-family: "SV Archivo", sans-serif;
+  font-size: 28px;
+}
+.anteprima-marca img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.info-marca { display: flex; flex-direction: column; gap: 1px; padding: 8px 10px 4px; min-width: 0; }
+.info-marca strong { font-size: 15px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.info-marca small { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.azioni-marca { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 10px 10px; }
+.mini-marca { display: flex; margin-left: auto; }
+.griglia-marche .vuota {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 30px;
+  text-align: center;
+  border: 2px dashed var(--inchiostro);
+  border-radius: 12px;
+  background: var(--foglio);
+}
+.altre { display: flex; justify-content: center; margin-top: 10px; }
+.riga-gen-marca select { font-weight: 700; }
+.riga-gen-marca.con-marca select { background: var(--menta); }
+
 /* ------------------------------------------------------------ finestre */
 
 .finestra {

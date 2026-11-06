@@ -1,0 +1,52 @@
+{
+  "versione": 1,
+  "nome": "Modello pubblicità",
+  "formato": "9:16",
+  "tema": "limone",
+  "accento": "",
+  "carattere": "auto",
+  "animazione": "auto",
+  "transizione": "dissolvenza",
+  "marchio": {
+    "nome": "{nome}",
+    "url": "",
+    "logo": ""
+  },
+  "musica": "",
+  "volume": 0.8,
+  "scene": [
+    {
+      "tipo": "titolo",
+      "durata": 3,
+      "etichetta": "Novità",
+      "titolo": "{slogan}",
+      "sottotitolo": "{nome}"
+    },
+    {
+      "tipo": "punti",
+      "durata": 4.5,
+      "titolo": "In 3 parole?",
+      "punti": [
+        "{vantaggi}"
+      ]
+    },
+    {
+      "tipo": "schermata",
+      "durata": 4,
+      "titolo": "",
+      "testo": "",
+      "immagine": "",
+      "dispositivo": "telefono",
+      "scorri": true,
+      "url": ""
+    },
+    {
+      "tipo": "cta",
+      "durata": 3.5,
+      "titolo": "Provalo adesso",
+      "pulsante": "{invito}",
+      "url": "",
+      "clic": true
+    }
+  ]
+}

@@ -20,6 +20,7 @@
   </div>
   <nav class="azioni">
     <button id="apri-generatore" class="pulsante giallo" type="button">✦ Generatore rapido</button>
+    <button id="apri-libreria" class="pulsante menta" type="button">★ Marche</button>
     <button id="apri-file" class="pulsante" type="button" title="Apri un progetto .json">Apri</button>
     <button id="salva-file" class="pulsante" type="button" title="Scarica il progetto come .json">Salva</button>
     <button id="copertina" class="pulsante" type="button" title="Scarica il fotogramma attuale come immagine">Copertina</button>
@@ -55,7 +56,8 @@
     </section>
 
     <section class="gruppo">
-      <h2><span class="numero">03</span> Marchio</h2>
+      <h2><span class="numero">03</span> Marca</h2>
+      <div id="marca-attuale" class="marca-attuale"></div>
       <label class="campo">Nome <input id="marchio-nome" type="text" placeholder="Es. Prenotalo"></label>
       <label class="campo">Indirizzo del sito <input id="marchio-url" type="url" placeholder="https://..."></label>
       <div class="campo">Logo
@@ -112,6 +114,9 @@
   <form method="dialog" id="modulo-generatore">
     <h2>Generatore rapido</h2>
     <p class="tenue">Pochi dati, video già montato. Poi lo ritocchi pezzo per pezzo.</p>
+    <label class="campo riga-gen-marca" id="riga-gen-marca">Marca del cliente
+      <select name="marca" id="gen-marca"></select>
+    </label>
     <fieldset class="modelli" id="scelta-modello"></fieldset>
     <div class="due">
       <label class="campo">Nome del sito o prodotto <input name="nome" type="text" required placeholder="Es. Prenotalo"></label>
@@ -141,6 +146,57 @@
   </form>
 </dialog>
 
+<!-- Database delle marche -->
+<dialog id="libreria" class="finestra larga">
+  <div class="testa-libreria">
+    <h2>Marche</h2>
+    <span id="conta-marche" class="conta-marche"></span>
+    <button id="chiudi-libreria" class="pulsante icona" type="button" aria-label="Chiudi">✕</button>
+  </div>
+  <p class="tenue">Il kit di ogni cliente: look, ritocchi, logo e testi. Un clic e il video nasce già sistemato.</p>
+  <div class="barra-libreria">
+    <input id="cerca-marche" type="search" placeholder="Cerca per nome, sito, slogan, note…" aria-label="Cerca marche">
+    <select id="ordine-marche" aria-label="Ordina">
+      <option value="recenti">Usate di recente</option>
+      <option value="nome">Nome A → Z</option>
+      <option value="usate">Più usate</option>
+      <option value="nuove">Ultime create</option>
+    </select>
+  </div>
+  <div class="azioni-libreria">
+    <button id="nuova-marca" class="pulsante principale" type="button">★ Salva il progetto come marca</button>
+    <button id="importa-marche" class="pulsante" type="button">Importa</button>
+    <button id="esporta-marche" class="pulsante" type="button">Esporta tutte</button>
+    <input id="file-marche" type="file" accept=".json,application/json" hidden>
+  </div>
+  <ul id="griglia-marche" class="griglia-marche"></ul>
+  <div class="altre"><button id="altre-marche" class="pulsante" type="button" hidden>Mostra altre</button></div>
+  <p class="nota">Le marche restano in questo browser. Esportale ogni tanto: il file è la tua copia di sicurezza e si importa su un altro computer.</p>
+</dialog>
+
+<dialog id="scheda-marca" class="finestra">
+  <form method="dialog" id="modulo-marca">
+    <h2 id="titolo-scheda-marca">Nuova marca</h2>
+    <p class="tenue" id="look-marca"></p>
+    <div class="due">
+      <label class="campo">Nome del cliente o prodotto <input name="nome" type="text" required></label>
+      <label class="campo">Sito <input name="url" type="text" placeholder="https://..."></label>
+    </div>
+    <label class="campo">Slogan abituale <input name="slogan" type="text"></label>
+    <label class="campo">Vantaggi abituali (uno per riga) <textarea name="vantaggi" rows="3"></textarea></label>
+    <div class="due">
+      <label class="campo">Testo del pulsante <input name="invito" type="text"></label>
+      <div class="campo">Logo <div class="immagine-campo" id="logo-marca"></div></div>
+    </div>
+    <label class="campo">Note interne (non vanno nel video) <textarea name="note" rows="2" placeholder="Es. referente, pacchetto venduto, colori da evitare…"></textarea></label>
+    <label class="spunta" id="riga-prendi-look"><input type="checkbox" name="prendiLook"> Sostituisci look e ritocchi con quelli del progetto aperto</label>
+    <div class="fondo-finestra">
+      <button class="pulsante" value="annulla" type="submit" formnovalidate>Annulla</button>
+      <button class="pulsante principale" value="salva" type="submit">Salva marca</button>
+    </div>
+  </form>
+</dialog>
+
 <!-- Esportazione -->
 <dialog id="esporta" class="finestra">
   <form method="dialog" id="modulo-esporta">
@@ -163,7 +219,9 @@
 
 <script src="js/motore.js"></script>
 <script src="js/modelli.js"></script>
+<script src="js/marca.js"></script>
 <script src="js/archivio.js"></script>
 <script src="js/editor.js"></script>
+<script src="js/libreria.js"></script>
 </body>
 </html>

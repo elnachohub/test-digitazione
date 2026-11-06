@@ -1,0 +1,101 @@
+{
+  "tipo": "studio-video-marche",
+  "versione": 1,
+  "esportato": "2026-11-06T00:00:00.000Z",
+  "marche": [
+    {
+      "versione": 1,
+      "id": "esempio-prenotalo",
+      "nome": "Prenotalo",
+      "url": "prenotalo.example",
+      "logo": "",
+      "slogan": "Prenotazioni online senza telefonate",
+      "vantaggi": "Agenda sempre aggiornata\nPromemoria automatici\nZero buchi in agenda",
+      "invito": "Prova gratis 14 giorni",
+      "note": "",
+      "tema": "anguria",
+      "accento": "",
+      "carattere": "auto",
+      "animazione": "auto",
+      "transizione": "dissolvenza",
+      "formato": "9:16",
+      "scene": {
+        "titolo": {
+          "regola": {
+            "titolo": {
+              "scala": 1.1
+            }
+          }
+        }
+      },
+      "anteprima": "",
+      "creata": "2026-11-06T00:00:00.000Z",
+      "modificata": "2026-11-06T00:00:00.000Z",
+      "usi": 0,
+      "ultimoUso": ""
+    },
+    {
+      "versione": 1,
+      "id": "esempio-forno",
+      "nome": "Forno Bianchi",
+      "url": "fornobianchi.example",
+      "logo": "",
+      "slogan": "Pane a lievitazione naturale, ordinalo online",
+      "vantaggi": "Sfornato alle 6 ogni mattina\nRitiro senza fila\nFarine macinate a pietra",
+      "invito": "Ordina il pane",
+      "note": "",
+      "tema": "carta",
+      "accento": "",
+      "carattere": "auto",
+      "animazione": "auto",
+      "transizione": "dissolvenza",
+      "formato": "9:16",
+      "scene": {
+        "cta": {
+          "regola": {
+            "pulsante": {
+              "scala": 1.25
+            }
+          }
+        }
+      },
+      "anteprima": "",
+      "creata": "2026-11-06T00:00:00.000Z",
+      "modificata": "2026-11-06T00:00:00.000Z",
+      "usi": 0,
+      "ultimoUso": ""
+    },
+    {
+      "versione": 1,
+      "id": "esempio-palestra",
+      "nome": "Palestra Nova",
+      "url": "palestranova.example",
+      "logo": "",
+      "slogan": "Prenota il corso in 10 secondi",
+      "vantaggi": "Aperta 7 giorni su 7\nPrima lezione gratis\nIstruttori certificati",
+      "invito": "Prenota la prova",
+      "note": "",
+      "tema": "acido",
+      "accento": "",
+      "carattere": "auto",
+      "animazione": "auto",
+      "transizione": "dissolvenza",
+      "formato": "9:16",
+      "scene": {
+        "titolo": {
+          "regola": {
+            "titolo": {
+              "colore": "#c8ff2e"
+            }
+          },
+          "animazione": "macchina"
+        }
+      },
+      "anteprima": "",
+      "creata": "2026-11-06T00:00:00.000Z",
+      "modificata": "2026-11-06T00:00:00.000Z",
+      "usi": 0,
+      "ultimoUso": ""
+    }
+  ]
+}
