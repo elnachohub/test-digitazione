@@ -1,0 +1,65 @@
+{
+  "nome": "Test di digitazione — promo",
+  "formato": "9:16",
+  "tema": "carta",
+  "accento": "#d9622b",
+  "carattere": "grottesco",
+  "animazione": "sali",
+  "transizione": "dissolvenza",
+  "marchio": {
+    "nome": "Test di digitazione",
+    "url": "elnachohub.github.io/test-digitazione",
+    "logo": "sito/logo.png"
+  },
+  "musica": "",
+  "volume": 0.8,
+  "scene": [
+    {
+      "tipo": "titolo",
+      "durata": 3,
+      "animazione": "scatto",
+      "etichetta": "Sfida",
+      "titolo": "Quanto sei veloce sulla tastiera?",
+      "sottotitolo": "",
+      "logo": "sito/logo.png"
+    },
+    {
+      "tipo": "punti",
+      "durata": 8,
+      "titolo": "Mettiti alla prova",
+      "punti": [
+        "Il tempo parte al primo tasto",
+        "Frasi di senso compiuto, in italiano o inglese",
+        "Parole al minuto, precisione, tasti più sbagliati"
+      ]
+    },
+    {
+      "tipo": "schermata",
+      "durata": 4,
+      "titolo": "Classica o Arcade: scegli la tua sfida",
+      "testo": "",
+      "immagine": "sito/telefono-pagina-corta.jpg",
+      "dispositivo": "telefono",
+      "scorri": true,
+      "url": "elnachohub.github.io/test-digitazione",
+      "regola": {
+        "titolo": {
+          "dy": 5
+        },
+        "dispositivo": {
+          "scala": 0.94,
+          "dy": -10
+        }
+      }
+    },
+    {
+      "tipo": "cta",
+      "durata": 4,
+      "titolo": "Apri il sito e fai il test adesso",
+      "pulsante": "Inizia il test",
+      "url": "elnachohub.github.io/test-digitazione",
+      "logo": "sito/logo.png",
+      "clic": true
+    }
+  ]
+}

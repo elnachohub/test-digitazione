@@ -1,0 +1,92 @@
+{
+  "nome": "Test di digitazione — tutorial",
+  "formato": "16:9",
+  "tema": "carta",
+  "accento": "#d9622b",
+  "carattere": "grottesco",
+  "animazione": "sali",
+  "transizione": "dissolvenza",
+  "marchio": { "nome": "Test di digitazione", "url": "elnachohub.github.io/test-digitazione", "logo": "sito/logo.png" },
+  "musica": "",
+  "volume": 0.8,
+  "scene": [
+    {
+      "tipo": "titolo",
+      "durata": 3,
+      "animazione": "scatto",
+      "etichetta": "Tutorial",
+      "titolo": "Quanto sei veloce? Ecco come scoprirlo",
+      "sottotitolo": "",
+      "logo": "sito/logo.png"
+    },
+    {
+      "tipo": "tutorial",
+      "durata": 8,
+      "titolo": "1. Scegli la sfida",
+      "immagine": "sito/stato-1-scelte.jpg",
+      "zoom": true,
+      "url": "elnachohub.github.io/test-digitazione",
+      "passi": [
+        { "testo": "Scegli la durata: 30 secondi", "x": 0.311, "y": 0.270 },
+        { "testo": "Scegli il livello: Facile", "x": 0.475, "y": 0.270 },
+        { "testo": "Clicca sul testo e inizia a scrivere", "x": 0.500, "y": 0.645 }
+      ]
+    },
+    {
+      "tipo": "tutorial",
+      "durata": 8,
+      "titolo": "2. Scrivi",
+      "immagine": "sito/stato-2-scrittura.jpg",
+      "zoom": true,
+      "url": "elnachohub.github.io/test-digitazione",
+      "passi": [
+        { "testo": "Il tempo parte al primo tasto", "x": 0.193, "y": 0.043 },
+        { "testo": "Parole al minuto in diretta", "x": 0.398, "y": 0.043 },
+        { "testo": "La tastiera ti indica il prossimo tasto", "x": 0.418, "y": 0.460 }
+      ]
+    },
+    {
+      "tipo": "tutorial",
+      "durata": 5,
+      "titolo": "3. Guarda il risultato",
+      "immagine": "sito/stato-3-risultati.jpg",
+      "zoom": true,
+      "url": "elnachohub.github.io/test-digitazione",
+      "passi": [
+        { "testo": "Parole al minuto e precisione", "x": 0.186, "y": 0.130 },
+        { "testo": "Il grafico secondo per secondo", "x": 0.500, "y": 0.465 }
+      ]
+    },
+    {
+      "tipo": "tutorial",
+      "durata": 5,
+      "titolo": "4. Capisci dove sbagli",
+      "immagine": "sito/stato-4-grafico.jpg",
+      "zoom": true,
+      "url": "elnachohub.github.io/test-digitazione",
+      "passi": [
+        { "testo": "Ecco i tasti più sbagliati", "x": 0.550, "y": 0.598 },
+        { "testo": "Nuova partita: batti il record", "x": 0.500, "y": 0.873 }
+      ]
+    },
+    {
+      "tipo": "punti",
+      "durata": 6,
+      "titolo": "In tre passi",
+      "punti": [
+        "Scegli durata e livello",
+        "Scrivi: il tempo parte da solo",
+        "Guarda velocità ed errori"
+      ]
+    },
+    {
+      "tipo": "cta",
+      "durata": 4,
+      "titolo": "Ora tocca a te: quanto sei veloce?",
+      "pulsante": "Fai il test",
+      "url": "elnachohub.github.io/test-digitazione",
+      "logo": "sito/logo.png",
+      "clic": true
+    }
+  ]
+}
