@@ -1,0 +1,135 @@
+{
+  "indirizzo": "http://127.0.0.1:8790/index.html",
+  "titolo": "Test di digitazione",
+  "descrizione": "",
+  "titoli": [
+    "Test di digitazione",
+    "Punteggi di Giocatore 1",
+    "Cronologia",
+    "Tabella sfida"
+  ],
+  "paragrafi": [
+    "Frasi di senso compiuto · tastiera QWERTY",
+    "Clicca qui e inizia a scrivere: il tempo parte al primo tasto.",
+    "Tab nuova partita · Esc ricomincia mentre scrivi",
+    "Ancora nessun test: inizia a scrivere!",
+    "I profili di questo browser, con le impostazioni attuali.",
+    "Nessun risultato con queste impostazioni."
+  ],
+  "pulsanti": [
+    "Nuovo",
+    "Elimina",
+    "Classica",
+    "Arcade",
+    "30 s",
+    "60 s",
+    "120 s",
+    "Facile",
+    "Medio",
+    "Difficile"
+  ],
+  "colori": {
+    "sfondoPagina": "rgb(247, 244, 238)",
+    "accentiCandidati": [
+      "#d9622b"
+    ]
+  },
+  "cliccabili": [
+    {
+      "testo": "Italiano English",
+      "tipo": "select",
+      "x": 0.872,
+      "y": 0.05
+    },
+    {
+      "testo": "Giocatore 1",
+      "tipo": "select",
+      "x": 0.176,
+      "y": 0.171
+    },
+    {
+      "testo": "Nuovo",
+      "tipo": "button",
+      "x": 0.813,
+      "y": 0.162
+    },
+    {
+      "testo": "Elimina",
+      "tipo": "button",
+      "x": 0.878,
+      "y": 0.162
+    },
+    {
+      "testo": "Classica",
+      "tipo": "button",
+      "x": 0.15,
+      "y": 0.27
+    },
+    {
+      "testo": "Arcade",
+      "tipo": "button",
+      "x": 0.228,
+      "y": 0.27
+    },
+    {
+      "testo": "30 s",
+      "tipo": "button",
+      "x": 0.311,
+      "y": 0.27
+    },
+    {
+      "testo": "60 s",
+      "tipo": "button",
+      "x": 0.355,
+      "y": 0.27
+    },
+    {
+      "testo": "120 s",
+      "tipo": "button",
+      "x": 0.401,
+      "y": 0.27
+    },
+    {
+      "testo": "Facile",
+      "tipo": "button",
+      "x": 0.475,
+      "y": 0.27
+    },
+    {
+      "testo": "Medio",
+      "tipo": "button",
+      "x": 0.529,
+      "y": 0.27
+    },
+    {
+      "testo": "Difficile",
+      "tipo": "button",
+      "x": 0.587,
+      "y": 0.27
+    },
+    {
+      "testo": "on",
+      "tipo": "input",
+      "x": 0.12,
+      "y": 0.352
+    },
+    {
+      "testo": "on",
+      "tipo": "input",
+      "x": 0.303,
+      "y": 0.352
+    },
+    {
+      "testo": "Italiana Americana (US)",
+      "tipo": "select",
+      "x": 0.491,
+      "y": 0.354
+    }
+  ],
+  "catturato": "2026-11-06T11:12:20.461Z",
+  "file": {
+    "computerPagina": "computer-pagina.jpg",
+    "computerSchermo": "computer-schermo.jpg",
+    "telefonoPagina": "telefono-pagina.jpg"
+  }
+}
