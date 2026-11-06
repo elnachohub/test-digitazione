@@ -6,7 +6,11 @@
   "carattere": "grottesco",
   "animazione": "sali",
   "transizione": "dissolvenza",
-  "marchio": { "nome": "Test di digitazione", "url": "elnachohub.github.io/test-digitazione", "logo": "sito/logo.png" },
+  "marchio": {
+    "nome": "Test di digitazione",
+    "url": "elnachohub.github.io/test-digitazione",
+    "logo": "sito/logo.png"
+  },
   "musica": "",
   "volume": 0.8,
   "scene": [
@@ -27,9 +31,21 @@
       "zoom": true,
       "url": "elnachohub.github.io/test-digitazione",
       "passi": [
-        { "testo": "Scegli la durata: 30 secondi", "x": 0.311, "y": 0.270 },
-        { "testo": "Scegli il livello: Facile", "x": 0.475, "y": 0.270 },
-        { "testo": "Clicca sul testo e inizia a scrivere", "x": 0.500, "y": 0.645 }
+        {
+          "testo": "Scegli la durata: 30 secondi",
+          "x": 0.311,
+          "y": 0.27
+        },
+        {
+          "testo": "Scegli il livello: Facile",
+          "x": 0.475,
+          "y": 0.27
+        },
+        {
+          "testo": "Clicca sul testo e inizia a scrivere",
+          "x": 0.5,
+          "y": 0.645
+        }
       ]
     },
     {
@@ -40,9 +56,21 @@
       "zoom": true,
       "url": "elnachohub.github.io/test-digitazione",
       "passi": [
-        { "testo": "Il tempo parte al primo tasto", "x": 0.193, "y": 0.043 },
-        { "testo": "Parole al minuto in diretta", "x": 0.398, "y": 0.043 },
-        { "testo": "La tastiera ti indica il prossimo tasto", "x": 0.418, "y": 0.460 }
+        {
+          "testo": "Il tempo parte al primo tasto",
+          "x": 0.193,
+          "y": 0.043
+        },
+        {
+          "testo": "Parole al minuto in diretta",
+          "x": 0.398,
+          "y": 0.043
+        },
+        {
+          "testo": "La tastiera ti indica il prossimo tasto",
+          "x": 0.418,
+          "y": 0.46
+        }
       ]
     },
     {
@@ -53,8 +81,16 @@
       "zoom": true,
       "url": "elnachohub.github.io/test-digitazione",
       "passi": [
-        { "testo": "Parole al minuto e precisione", "x": 0.186, "y": 0.130 },
-        { "testo": "Il grafico secondo per secondo", "x": 0.500, "y": 0.465 }
+        {
+          "testo": "Parole al minuto e precisione",
+          "x": 0.186,
+          "y": 0.13
+        },
+        {
+          "testo": "Il grafico secondo per secondo",
+          "x": 0.5,
+          "y": 0.465
+        }
       ]
     },
     {
@@ -65,8 +101,16 @@
       "zoom": true,
       "url": "elnachohub.github.io/test-digitazione",
       "passi": [
-        { "testo": "Ecco i tasti più sbagliati", "x": 0.550, "y": 0.598 },
-        { "testo": "Nuova partita: batti il record", "x": 0.500, "y": 0.873 }
+        {
+          "testo": "Ecco i tasti più sbagliati",
+          "x": 0.55,
+          "y": 0.598
+        },
+        {
+          "testo": "Nuova partita: batti il record",
+          "x": 0.5,
+          "y": 0.873
+        }
       ]
     },
     {

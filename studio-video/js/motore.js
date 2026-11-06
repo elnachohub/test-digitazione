@@ -1191,14 +1191,17 @@
   };
 
   // Geometria della scena tutorial: serve anche all'editor per piazzare i passi.
-  function geometriaTutorial(W, H, u, sc, img) {
+  // stile = stile del tema: l'editoriale ha filetti in alto e in basso da non coprire.
+  function geometriaTutorial(W, H, u, sc, img, stile) {
     const verticale = H > W * 1.1;
     const haTitolo = Boolean((sc.titolo || "").trim());
-    const alto = haTitolo ? (verticale ? H * 0.16 : 12 * u) : 3 * u;
-    const box = { x: 4 * u, y: alto + 1.5 * u, w: W - 8 * u, h: H - alto - 5 * u };
+    const sopra = stile === "editoriale" ? 6 * u : 0;
+    const sotto = stile === "editoriale" ? 3 * u : 0;
+    const alto = (haTitolo ? (verticale ? H * 0.16 : 12 * u) : 3 * u) + sopra;
+    const box = { x: 4 * u, y: alto + 1.5 * u, w: W - 8 * u, h: H - alto - 5 * u - sotto };
     const aspetto = img ? img.width / img.height : 16 / 10;
     const m = misuraBrowser(box.x, box.y, box.w, box.h, aspetto);
-    const titolo = { x: 6 * u, y: 3 * u, w: W - 12 * u, h: alto - 3 * u };
+    const titolo = { x: 6 * u, y: 3 * u + sopra, w: W - 12 * u, h: alto - 3 * u - sopra };
     if (verticale) {
       const gruppo = titolo.h + 2 * u + m.h;
       const y0 = (H - gruppo) / 2;
@@ -1236,7 +1239,7 @@
     const { W, H, u, d, tema } = s;
     let t = s.t;
     const img = s.img(sc.immagine);
-    const g = geometriaTutorial(W, H, u, sc, img);
+    const g = geometriaTutorial(W, H, u, sc, img, tema.stile);
     const m = g.m;
     if (s.modifica) t = 99; // posa ferma per l'editor: niente zoom né cursore
     const st = s.modifica ? { n: 0 } : statoTutorial(sc, t, d);

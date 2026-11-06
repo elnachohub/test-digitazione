@@ -282,7 +282,7 @@
     const sc = scenaSelezionata();
     const u = Math.min(tela.width, tela.height) / 100;
     const img = sc.immagine ? stato.risorse.get(sc.immagine) : null;
-    return { sc, u, m: SV.geometriaTutorial(tela.width, tela.height, u, sc, img).m };
+    return { sc, u, m: SV.geometriaTutorial(tela.width, tela.height, u, sc, img, SV.temaDi(stato.progetto).stile).m };
   }
 
   function disegnaSegniPassi() {

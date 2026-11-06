@@ -6,11 +6,7 @@
   "carattere": "grottesco",
   "animazione": "sali",
   "transizione": "dissolvenza",
-  "marchio": {
-    "nome": "Test di digitazione",
-    "url": "elnachohub.github.io/test-digitazione",
-    "logo": "sito/logo.png"
-  },
+  "marchio": { "nome": "Test di digitazione", "url": "elnachohub.github.io/test-digitazione", "logo": "sito/logo.png" },
   "musica": "",
   "volume": 0.8,
   "scene": [
@@ -42,15 +38,7 @@
       "dispositivo": "telefono",
       "scorri": true,
       "url": "elnachohub.github.io/test-digitazione",
-      "regola": {
-        "titolo": {
-          "dy": 5
-        },
-        "dispositivo": {
-          "scala": 0.94,
-          "dy": -10
-        }
-      }
+      "regola": { "titolo": { "dy": 5 }, "dispositivo": { "scala": 0.94, "dy": -10 } }
     },
     {
       "tipo": "cta",
