@@ -18,7 +18,18 @@ nel browser, e un comando produce MP4 perfetti in serie.
   con scorrimento della pagina intera), tutorial, numeri che contano,
   recensione con stelle, invito all'azione con pulsante cliccato.
 - **Un progetto, tutti i formati**: l'impaginazione si adatta da sola.
-- **Temi, colore d'accento, 4 caratteri, 3 transizioni, logo, musica**.
+- **4 linguaggi visivi** (non 4 sfumature dello stesso): *Pop* (colori pieni,
+  contorni neri, ombre nette), *Editoriale* (carta, filetti, serif da
+  rivista), *Griglia* (scuro tecnico, timecode, accento acido), *Sfumato*.
+  9 temi, 7 caratteri inclusi, 5 animazioni del testo (scatto elastico,
+  maschera, macchina da scrivere...), 3 transizioni, logo, musica.
+- **Ritocco a mano di ogni dettaglio**: con l'anteprima in pausa clicchi un
+  elemento (titolo, pulsante, schermata, numero...) e lo trascini (aggancio al
+  centro), lo ingrandisci dalla maniglia, gli cambi colore o lo nascondi.
+  Doppio clic = vai al suo testo. Frecce per spostamenti fini, Canc per
+  nascondere, **Ctrl+Z / Ctrl+Maiusc+Z** per annullare e ripetere.
+  Ogni scena può avere animazione e sfondo propri (colore o foto con velo).
+  I ritocchi finiscono identici nel video esportato.
 - **Esporta** dal browser (MP4 su Chrome/Edge, altrimenti WebM) oppure da riga
   di comando (MP4 H.264 + AAC, fotogramma per fotogramma, compatibile ovunque).
 - **Copertina PNG** dal fotogramma attuale (miniature YouTube, anteprime).
@@ -64,7 +75,9 @@ decine di video da modelli scritti a mano o da uno script.
 ```
 studio-video/
 ├── index.html          editor
-├── css/editor.css
+├── css/editor.css      interfaccia
+├── css/font.css        caratteri inclusi
+├── font/               file dei caratteri (licenza SIL OFL, vedi OFL-*.txt)
 ├── js/
 │   ├── motore.js       disegna un fotogramma all'istante t (cuore di tutto)
 │   ├── modelli.js      tipi di scena e generatori dei 3 modelli

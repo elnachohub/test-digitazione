@@ -1,0 +1,17 @@
+/* Caratteri inclusi (licenza SIL OFL, vedi font/OFL-*.txt): stessi font
+   nell'editor, nell'esportazione e nel rendering MP4, anche senza rete. */
+@font-face { font-family: "SV Bricolage"; src: url("../font/bricolage-grotesque-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: block; }
+@font-face { font-family: "SV Bricolage"; src: url("../font/bricolage-grotesque-latin-600-normal.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: block; }
+@font-face { font-family: "SV Bricolage"; src: url("../font/bricolage-grotesque-latin-800-normal.woff2") format("woff2"); font-weight: 800; font-style: normal; font-display: block; }
+@font-face { font-family: "SV Anton"; src: url("../font/anton-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: block; }
+@font-face { font-family: "SV Archivo"; src: url("../font/archivo-black-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: block; }
+@font-face { font-family: "SV Fraunces"; src: url("../font/fraunces-latin-600-normal.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: block; }
+@font-face { font-family: "SV Fraunces"; src: url("../font/fraunces-latin-800-normal.woff2") format("woff2"); font-weight: 800; font-style: normal; font-display: block; }
+@font-face { font-family: "SV Fraunces"; src: url("../font/fraunces-latin-600-italic.woff2") format("woff2"); font-weight: 600; font-style: italic; font-display: block; }
+@font-face { font-family: "SV Space"; src: url("../font/space-grotesk-latin-500-normal.woff2") format("woff2"); font-weight: 500; font-style: normal; font-display: block; }
+@font-face { font-family: "SV Space"; src: url("../font/space-grotesk-latin-700-normal.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: block; }
+@font-face { font-family: "SV Inter"; src: url("../font/inter-latin-500-normal.woff2") format("woff2"); font-weight: 500; font-style: normal; font-display: block; }
+@font-face { font-family: "SV Inter"; src: url("../font/inter-latin-600-normal.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: block; }
+@font-face { font-family: "SV Inter"; src: url("../font/inter-latin-800-normal.woff2") format("woff2"); font-weight: 800; font-style: normal; font-display: block; }
+@font-face { font-family: "SV Syne"; src: url("../font/syne-latin-700-normal.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: block; }
+@font-face { font-family: "SV Syne"; src: url("../font/syne-latin-800-normal.woff2") format("woff2"); font-weight: 800; font-style: normal; font-display: block; }

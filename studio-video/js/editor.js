@@ -1,6 +1,12 @@
 /*
- * Editor di Studio Video: pannelli, anteprima, generatore rapido, esportazione.
- * Tutto gira nel browser; il progetto si salva da solo (IndexedDB).
+ * Editor di Studio Video: pannelli, anteprima, ritocchi a mano, generatore
+ * rapido, esportazione. Tutto gira nel browser; il progetto si salva da solo
+ * (IndexedDB).
+ *
+ * Ritocchi a mano: nell'anteprima in pausa si clicca un elemento (titolo,
+ * pulsante, schermata...), lo si trascina, lo si ingrandisce dalla maniglia,
+ * gli si cambia colore o lo si nasconde. Le regolazioni stanno in
+ * scena.regola[id] e il motore le applica in anteprima e in esportazione.
  */
 (function () {
   "use strict";
@@ -17,12 +23,17 @@
     inRiproduzione: false,
     posizionamento: false, // tutorial: clic sull'anteprima = nuovo passo
     risorse: new Map(),
-    trascina: -1,
+    elementi: [], // riquadri dell'ultimo fotogramma disegnato
+    elemento: null, // id dell'elemento selezionato
+    sopra: null, // id dell'elemento sotto il mouse
+    guide: { x: false, y: false },
+    gesto: null, // trascinamento in corso
   };
 
   const tela = $("#tela");
   const ctx = tela.getContext("2d");
   const audio = new Audio();
+  const ROSA = "#ff3e7f";
 
   function progettoIniziale() {
     return SV.MODELLI.presentazione.crea({
@@ -31,6 +42,7 @@
       url: "https://iltuosito.it",
       vantaggi: "Primo vantaggio concreto\nSecondo vantaggio concreto\nTerzo vantaggio concreto",
       invito: "Visita il sito",
+      tema: "limone",
     });
   }
 
@@ -142,6 +154,67 @@
     return c.toDataURL("image/jpeg", 0.9);
   }
 
+  // ------------------------------------------------------ annulla / ripeti
+
+  // Le istantanee sostituiscono le immagini (data URL lunghissime) con un
+  // segnaposto: 50 passi di storia non pesano 50 volte le immagini.
+  const deposito = new Map();
+  const depositoInverso = new Map();
+  function istantanea() {
+    return JSON.stringify(stato.progetto, (k, v) => {
+      if (typeof v === "string" && v.length > 2000 && v.startsWith("data:")) {
+        if (!deposito.has(v)) {
+          const id = `§img${deposito.size}§`;
+          deposito.set(v, id);
+          depositoInverso.set(id, v);
+        }
+        return deposito.get(v);
+      }
+      return v;
+    });
+  }
+  function daIstantanea(testo) {
+    return JSON.parse(testo, (k, v) => (typeof v === "string" && depositoInverso.has(v) ? depositoInverso.get(v) : v));
+  }
+
+  const storia = { indietro: [], avanti: [], ultimaChiave: null, ultimoMomento: 0 };
+
+  function registraStoria(chiave) {
+    const ora = Date.now();
+    // le modifiche continue allo stesso campo diventano un solo passo
+    if (chiave && chiave === storia.ultimaChiave && ora - storia.ultimoMomento < 1200) {
+      storia.ultimoMomento = ora;
+      return;
+    }
+    storia.indietro.push(istantanea());
+    if (storia.indietro.length > 80) storia.indietro.shift();
+    storia.avanti = [];
+    storia.ultimaChiave = chiave;
+    storia.ultimoMomento = ora;
+    aggiornaPulsantiStoria();
+  }
+
+  function ripristina(da, verso) {
+    if (!da.length) return;
+    verso.push(istantanea());
+    stato.progetto = daIstantanea(da.pop());
+    storia.ultimaChiave = null;
+    stato.selezionata = Math.min(stato.selezionata, stato.progetto.scene.length - 1);
+    salvaPresto();
+    mostraProgetto();
+    mostraScene();
+    mostraProprieta();
+    aggiornaPulsantiStoria();
+    SV.caricaRisorse(stato.progetto, stato.risorse).then(ridisegna);
+  }
+  const annulla = () => ripristina(storia.indietro, storia.avanti);
+  const ripeti = () => ripristina(storia.avanti, storia.indietro);
+
+  function aggiornaPulsantiStoria() {
+    $("#annulla").disabled = !storia.indietro.length;
+    $("#ripeti").disabled = !storia.avanti.length;
+  }
+
   // ------------------------------------------------------ salvataggio auto
 
   let timerSalva = 0;
@@ -173,7 +246,21 @@
     return stato.posizionamento && !stato.inRiproduzione && sc && sc.tipo === "tutorial";
   }
 
-  function disegnaOra(progetto = stato.progetto) {
+  // L'anteprima occupa il massimo spazio possibile senza deformarsi.
+  function adattaCornice() {
+    const palco = $(".palco");
+    const cornice = $("#cornice-tela");
+    const larga = palco.clientWidth - 48;
+    const comandi = 150;
+    const alta = window.innerWidth > 1100 ? palco.clientHeight - comandi : window.innerHeight * 0.7;
+    const k = Math.min(larga / tela.width, Math.max(160, alta) / tela.height);
+    cornice.style.width = `${Math.floor(tela.width * k)}px`;
+    cornice.style.height = `${Math.floor(tela.height * k)}px`;
+  }
+  window.addEventListener("resize", adattaCornice);
+
+  function disegnaOra({ pulito = false } = {}) {
+    const progetto = stato.progetto;
     const { w, h } = SV.dimensioni(progetto);
     if (tela.width !== w || tela.height !== h) {
       tela.width = w;
@@ -181,24 +268,15 @@
       adattaCornice();
     }
     const posa = inPosizionamento();
-    SV.disegna(ctx, progetto, stato.risorse, stato.t, { modifica: posa });
-    if (posa) disegnaSegniPassi();
-    $("#suggerimento-tutorial").hidden = !posa;
+    stato.elementi = SV.disegna(ctx, progetto, stato.risorse, stato.t, { modifica: posa, registra: true });
+    if (!pulito) {
+      if (posa) disegnaSegniPassi();
+      if (!stato.inRiproduzione) disegnaSelezione();
+    }
+    $("#suggerimento-tutorial").hidden = !posa || pulito;
     aggiornaTempo();
+    aggiornaElementiPannello();
   }
-
-  // L'anteprima occupa il massimo spazio possibile senza deformarsi.
-  function adattaCornice() {
-    const palco = $(".palco");
-    const cornice = $("#cornice-tela");
-    const larga = palco.clientWidth - 40;
-    const comandi = 120;
-    const alta = window.innerWidth > 1100 ? palco.clientHeight - comandi : window.innerHeight * 0.7;
-    const k = Math.min(larga / tela.width, Math.max(160, alta) / tela.height);
-    cornice.style.width = `${Math.floor(tela.width * k)}px`;
-    cornice.style.height = `${Math.floor(tela.height * k)}px`;
-  }
-  window.addEventListener("resize", adattaCornice);
 
   function geometriaSelezionata() {
     const sc = scenaSelezionata();
@@ -209,26 +287,93 @@
 
   function disegnaSegniPassi() {
     const { sc, u, m } = geometriaSelezionata();
-    const tema = SV.temaDi(stato.progetto);
     (sc.passi || []).forEach((p, i) => {
       const x = m.vx + p.x * m.vw;
       const y = m.vy + p.y * m.vh;
       ctx.beginPath();
       ctx.arc(x, y, 3 * u, 0, Math.PI * 2);
-      ctx.fillStyle = tema.accento;
-      ctx.shadowColor = "rgba(0,0,0,.35)";
-      ctx.shadowBlur = u;
+      ctx.fillStyle = ROSA;
       ctx.fill();
-      ctx.shadowColor = "transparent";
-      ctx.lineWidth = 0.4 * u;
-      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 0.45 * u;
+      ctx.strokeStyle = "#111";
       ctx.stroke();
-      ctx.fillStyle = SV.utili.testoSopra(tema.accento);
-      ctx.font = `800 ${Math.round(3 * u)}px Inter, system-ui, sans-serif`;
+      ctx.fillStyle = "#fff";
+      ctx.font = `800 ${Math.round(3 * u)}px "SV Bricolage", system-ui, sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(String(i + 1), x, y + 0.1 * u);
     });
+  }
+
+  function pixelSchermo() {
+    return tela.width / Math.max(1, tela.getBoundingClientRect().width);
+  }
+
+  function elementoDa(id) {
+    return stato.elementi.find((e) => e.id === id) || null;
+  }
+
+  function maniglia(e) {
+    const p = pixelSchermo();
+    return { x: e.x + e.w, y: e.y + e.h, r: 9 * p };
+  }
+
+  function disegnaSelezione() {
+    const p = pixelSchermo();
+    ctx.save();
+    const sopra = stato.sopra !== stato.elemento ? elementoDa(stato.sopra) : null;
+    if (sopra && !sopra.nascosto) {
+      ctx.setLineDash([6 * p, 4 * p]);
+      ctx.lineWidth = 1.5 * p;
+      ctx.strokeStyle = ROSA;
+      ctx.strokeRect(sopra.x - 4 * p, sopra.y - 4 * p, sopra.w + 8 * p, sopra.h + 8 * p);
+      ctx.setLineDash([]);
+    }
+    const sel = elementoDa(stato.elemento);
+    if (sel && !sel.nascosto) {
+      const x = sel.x - 5 * p;
+      const y = sel.y - 5 * p;
+      const w = sel.w + 10 * p;
+      const h = sel.h + 10 * p;
+      ctx.lineWidth = 2.5 * p;
+      ctx.strokeStyle = ROSA;
+      ctx.strokeRect(x, y, w, h);
+      // etichetta col nome
+      ctx.font = `700 ${Math.round(12 * p)}px "SV Bricolage", system-ui, sans-serif`;
+      const tw = ctx.measureText(sel.nome).width + 14 * p;
+      const ey = y - 22 * p < 0 ? y + h + 2 * p : y - 22 * p;
+      ctx.fillStyle = ROSA;
+      ctx.fillRect(x - 1.25 * p, ey, tw, 20 * p);
+      ctx.fillStyle = "#fff";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText(sel.nome, x + 6 * p, ey + 10.5 * p);
+      // maniglia per ingrandire
+      const mn = maniglia({ x, y, w, h });
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(mn.x - mn.r, mn.y - mn.r, mn.r * 2, mn.r * 2);
+      ctx.lineWidth = 2.5 * p;
+      ctx.strokeRect(mn.x - mn.r, mn.y - mn.r, mn.r * 2, mn.r * 2);
+    }
+    // guide di centratura durante lo spostamento
+    if (stato.gesto && stato.gesto.tipo === "sposta") {
+      ctx.lineWidth = 1.5 * p;
+      ctx.strokeStyle = "#2b45ff";
+      ctx.setLineDash([8 * p, 6 * p]);
+      if (stato.guide.x) {
+        ctx.beginPath();
+        ctx.moveTo(tela.width / 2, 0);
+        ctx.lineTo(tela.width / 2, tela.height);
+        ctx.stroke();
+      }
+      if (stato.guide.y) {
+        ctx.beginPath();
+        ctx.moveTo(0, tela.height / 2);
+        ctx.lineTo(tela.width, tela.height / 2);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
   }
 
   function aggiornaTempo() {
@@ -303,14 +448,23 @@
     if (valore != null) select.value = valore;
   }
 
+  // Temi raggruppati per stile, così si vede che sono linguaggi diversi.
+  function riempiTemi(select, valore) {
+    const gruppi = Object.keys(SV.STILI).map((stile) => elemento("optgroup", { label: SV.STILI[stile] },
+      Object.entries(SV.TEMI).filter(([, t]) => t.stile === stile).map(([k, t]) => elemento("option", { value: k, testo: t.nome }))));
+    select.replaceChildren(...gruppi);
+    if (valore) select.value = valore;
+  }
+
   function mostraProgetto() {
     const p = stato.progetto;
     $("#nome-progetto").value = p.nome || "";
     riempiScelta($("#formato"), SV.FORMATI, p.formato);
-    riempiScelta($("#tema"), SV.TEMI, p.tema);
-    riempiScelta($("#carattere"), SV.CARATTERI, p.carattere);
+    riempiTemi($("#tema"), p.tema);
+    riempiScelta($("#carattere"), SV.CARATTERI, p.carattere || "auto");
     riempiScelta($("#transizione"), SV.TRANSIZIONI, p.transizione);
-    $("#accento").value = p.accento || SV.TEMI[p.tema]?.accento || "#7b93ff";
+    riempiScelta($("#animazione"), SV.ANIMAZIONI, p.animazione || "auto");
+    $("#accento").value = p.accento || SV.TEMI[p.tema]?.accento || "#ff3e7f";
     $("#marchio-nome").value = p.marchio?.nome || "";
     $("#marchio-url").value = p.marchio?.url || "";
     campoImmagine($("#marchio-logo"), p.marchio?.logo, (v) => modifica(() => (p.marchio.logo = v)), true);
@@ -325,8 +479,10 @@
     audio.src = p.musica || "";
   }
 
-  // Applica una modifica al progetto. struttura=true quando cambiano le scene.
-  function modifica(fn, { struttura = false, proprieta = false } = {}) {
+  // Applica una modifica al progetto (con passo di storia).
+  // struttura=true quando cambiano le scene; chiave = raggruppa le modifiche continue.
+  function modifica(fn, { struttura = false, proprieta = false, chiave = null } = {}) {
+    registraStoria(chiave);
     fn();
     salvaPresto();
     if (struttura) mostraScene();
@@ -352,13 +508,13 @@
         type: "button", classe: "mini", title: titolo, "aria-label": titolo, disabled: disab,
         onclick: (e) => { e.stopPropagation(); fn(); },
       }, testo);
-      return elemento("li", { classe: i === stato.selezionata ? "selezionata" : "", onclick: () => seleziona(i) }, [
+      return elemento("li", { classe: `tipo-${sc.tipo}${i === stato.selezionata ? " selezionata" : ""}`, onclick: () => seleziona(i) }, [
         elemento("span", { classe: "icona-scena", testo: tipo.icona }),
         elemento("span", { classe: "testo-scena" }, [
-          elemento("strong", { testo: tipo.nome }),
+          elemento("strong", { testo: `${i + 1}. ${tipo.nome}` }),
           elemento("small", { classe: "riassunto", testo: riassunto(sc) }),
         ]),
-        elemento("span", { classe: "durata-scena", testo: `${Number(sc.durata).toFixed(1).replace(".0", "")} s` }),
+        elemento("span", { classe: "durata-scena", testo: `${Number(sc.durata).toFixed(1).replace(".0", "")}s` }),
         elemento("span", { classe: "azioni-scena" }, [
           azione("↑", "Sposta su", () => sposta(i, -1), i === 0),
           azione("↓", "Sposta giù", () => sposta(i, 1), i === scene.length - 1),
@@ -371,15 +527,14 @@
     aggiornaElencoLeggero();
   }
 
-  // Aggiorna testi e durate senza ricostruire (non toglie il fuoco ai campi).
   function aggiornaElencoLeggero() {
     const scene = stato.progetto.scene;
     document.querySelectorAll(".elenco-scene li").forEach((li, i) => {
       if (!scene[i]) return;
       li.querySelector(".riassunto").textContent = riassunto(scene[i]);
-      li.querySelector(".durata-scena").textContent = `${Number(scene[i].durata).toFixed(1).replace(".0", "")} s`;
+      li.querySelector(".durata-scena").textContent = `${Number(scene[i].durata).toFixed(1).replace(".0", "")}s`;
     });
-    $("#durata-totale").textContent = `${mmss(SV.durataTotale(stato.progetto))} totali`;
+    $("#durata-totale").textContent = mmss(SV.durataTotale(stato.progetto));
     mostraLineaTempo();
   }
 
@@ -400,7 +555,9 @@
   }
 
   function seleziona(i) {
+    const cambia = i !== stato.selezionata;
     stato.selezionata = Math.max(0, Math.min(i, stato.progetto.scene.length - 1));
+    if (cambia) stato.elemento = null;
     if (stato.inRiproduzione) pausa();
     const v = SV.tempi(stato.progetto)[stato.selezionata];
     if (v) {
@@ -418,35 +575,154 @@
   }
 
   function sposta(i, verso) {
-    const s = stato.progetto.scene;
     const j = i + verso;
-    if (j < 0 || j >= s.length) return;
-    [s[i], s[j]] = [s[j], s[i]];
-    stato.selezionata = j;
-    modifica(() => {}, { struttura: true });
+    if (j < 0 || j >= stato.progetto.scene.length) return;
+    modifica(() => {
+      const s = stato.progetto.scene;
+      [s[i], s[j]] = [s[j], s[i]];
+    }, { struttura: true });
     seleziona(j);
   }
 
   function duplica(i) {
-    const copia = JSON.parse(JSON.stringify(stato.progetto.scene[i]));
-    stato.progetto.scene.splice(i + 1, 0, copia);
-    modifica(() => {}, { struttura: true });
+    modifica(() => stato.progetto.scene.splice(i + 1, 0, JSON.parse(JSON.stringify(stato.progetto.scene[i]))), { struttura: true });
     seleziona(i + 1);
   }
 
   function elimina(i) {
     if (stato.progetto.scene.length <= 1) return;
-    stato.progetto.scene.splice(i, 1);
-    modifica(() => {}, { struttura: true });
+    modifica(() => stato.progetto.scene.splice(i, 1), { struttura: true });
     seleziona(Math.min(i, stato.progetto.scene.length - 1));
   }
 
   function aggiungi(tipo) {
-    const nuova = SV.TIPI[tipo].vuota();
     const i = stato.selezionata + 1;
-    stato.progetto.scene.splice(i, 0, nuova);
-    modifica(() => {}, { struttura: true });
+    modifica(() => stato.progetto.scene.splice(i, 0, SV.TIPI[tipo].vuota()), { struttura: true });
     seleziona(i);
+  }
+
+  // ------------------------------------------------- regolazioni elementi
+
+  function regola(id, crea = true) {
+    const sc = scenaSelezionata();
+    if (!sc) return {};
+    if (!sc.regola) {
+      if (!crea) return {};
+      sc.regola = {};
+    }
+    if (!sc.regola[id] && crea) sc.regola[id] = {};
+    return sc.regola[id] || {};
+  }
+
+  function pulisciRegola(id) {
+    const sc = scenaSelezionata();
+    if (!sc || !sc.regola || !sc.regola[id]) return;
+    const r = sc.regola[id];
+    for (const k of Object.keys(r)) if (r[k] === "" || r[k] == null || r[k] === false || (k === "scala" && r[k] === 1) || ((k === "dx" || k === "dy") && r[k] === 0)) delete r[k];
+    if (!Object.keys(r).length) delete sc.regola[id];
+    if (!Object.keys(sc.regola).length) delete sc.regola;
+  }
+
+  function selezionaElemento(id) {
+    stato.elemento = id;
+    mostraPannelloElemento();
+    ridisegna();
+  }
+
+  // Pannello dell'elemento selezionato + elenco di tutti gli elementi della scena.
+  function mostraPannelloElemento() {
+    const box = $("#pannello-elemento");
+    const el = elementoDa(stato.elemento);
+    if (!el) {
+      box.replaceChildren(elemento("p", { classe: "nota", testo: "Clicca un elemento nell'anteprima (in pausa) per spostarlo, ingrandirlo o ricolorarlo. Doppio clic = modifica il testo." }));
+      return;
+    }
+    const r = regola(el.id, false);
+    const tema = SV.temaDi(stato.progetto);
+    const scala = Math.round((Number(r.scala) || 1) * 100);
+    const campi = [
+      elemento("div", { classe: "testa-elemento" }, [
+        elemento("strong", { testo: el.nome }),
+        elemento("button", { type: "button", classe: "mini", title: "Deseleziona", "aria-label": "Deseleziona", onclick: () => selezionaElemento(null) }, "✕"),
+      ]),
+      elemento("label", { classe: "campo" }, [
+        elemento("span", { classe: "riga-etichetta" }, ["Dimensione ", elemento("output", { id: "uscita-scala", testo: `${scala}%` })]),
+        elemento("input", {
+          type: "range", min: 30, max: 300, step: 1, value: scala,
+          oninput: (e) => {
+            $("#uscita-scala").textContent = `${e.target.value}%`;
+            modifica(() => {
+              regola(el.id).scala = Number(e.target.value) / 100;
+              pulisciRegola(el.id);
+            }, { chiave: `scala-${el.id}` });
+          },
+        }),
+      ]),
+    ];
+    if (el.colorabile) {
+      campi.push(elemento("div", { classe: "campo" }, [
+        "Colore",
+        elemento("div", { classe: "riga-colore" }, [
+          elemento("input", {
+            type: "color", value: r.colore || tema.accento, "aria-label": "Colore dell'elemento",
+            oninput: (e) => modifica(() => (regola(el.id).colore = e.target.value), { chiave: `colore-${el.id}` }),
+          }),
+          ...[...new Set([tema.testo, tema.accento, tema.tenue, "#ffffff", "#111111"].map((c) => c.toLowerCase()))].map((c) => elemento("button", {
+            type: "button", classe: "campione", style: `background:${c}`, title: c, "aria-label": `Usa ${c}`,
+            onclick: () => {
+              modifica(() => (regola(el.id).colore = c));
+              mostraPannelloElemento();
+            },
+          })),
+          elemento("button", { type: "button", classe: "pulsante piccolo", onclick: () => { modifica(() => { delete regola(el.id).colore; pulisciRegola(el.id); }); mostraPannelloElemento(); } }, "Originale"),
+        ]),
+      ]));
+    }
+    campi.push(elemento("div", { classe: "azioni-elemento" }, [
+      el.campo ? elemento("button", { type: "button", classe: "pulsante piccolo", onclick: () => vaiAlCampo(el.campo) }, "✎ Testo") : "",
+      elemento("button", { type: "button", classe: "pulsante piccolo", onclick: () => { modifica(() => { const q = regola(el.id); delete q.dx; delete q.dy; pulisciRegola(el.id); }); } }, "Rimetti a posto"),
+      elemento("button", { type: "button", classe: "pulsante piccolo", onclick: () => { modifica(() => { delete scenaSelezionata().regola?.[el.id]; pulisciRegola(el.id); }); mostraPannelloElemento(); } }, "Azzera tutto"),
+      elemento("button", { type: "button", classe: "pulsante piccolo pericolo", onclick: () => nascondi(el.id, true) }, "Nascondi"),
+    ]));
+    campi.push(elemento("p", { classe: "nota", testo: "Frecce = sposta di poco (Maiusc = di più) · Canc = nascondi · Esc = deseleziona" }));
+    box.replaceChildren(...campi);
+  }
+
+  function nascondi(id, si) {
+    modifica(() => {
+      regola(id).nascosto = si;
+      pulisciRegola(id);
+    });
+    if (si && stato.elemento === id) stato.elemento = null;
+    mostraPannelloElemento();
+  }
+
+  // Elenco compatto degli elementi della scena con l'occhio per mostrarli/nasconderli.
+  let firmaElementi = "";
+  function aggiornaElementiPannello() {
+    const lista = $("#lista-elementi");
+    if (!lista || stato.inRiproduzione) return;
+    const firma = stato.elementi.map((e) => `${e.id}:${e.nascosto}`).join("|") + `#${stato.elemento}`;
+    if (firma === firmaElementi) return;
+    firmaElementi = firma;
+    lista.replaceChildren(...stato.elementi.map((e) => elemento("li", { classe: `${e.id === stato.elemento ? "attivo" : ""}${e.nascosto ? " spento" : ""}` }, [
+      elemento("button", { type: "button", classe: "nome-elemento", onclick: () => !e.nascosto && selezionaElemento(e.id), disabled: e.nascosto }, e.nome),
+      elemento("button", {
+        type: "button", classe: "mini", title: e.nascosto ? "Mostra" : "Nascondi", "aria-label": e.nascosto ? `Mostra ${e.nome}` : `Nascondi ${e.nome}`,
+        onclick: () => nascondi(e.id, !e.nascosto),
+      }, e.nascosto ? "◌" : "◉"),
+    ])));
+    if (stato.elemento && !elementoDa(stato.elemento)) stato.elemento = null;
+  }
+
+  function vaiAlCampo(chiave) {
+    const campo = document.querySelector(`#proprieta [data-chiave="${chiave}"]`);
+    if (!campo) return;
+    campo.scrollIntoView({ block: "center", behavior: "smooth" });
+    campo.focus();
+    if (campo.select) campo.select();
+    campo.classList.add("lampeggia");
+    setTimeout(() => campo.classList.remove("lampeggia"), 900);
   }
 
   // --------------------------------------------------------- proprietà
@@ -492,29 +768,63 @@
           type: "number", min: 1, max: 60, step: 0.5, value: sc.durata,
           oninput: (e) => {
             const v = parseFloat(e.target.value);
-            if (isFinite(v) && v >= 1) modifica(() => (sc.durata = v));
+            if (isFinite(v) && v >= 1) modifica(() => (sc.durata = v), { chiave: "durata" });
           },
         }),
       ]),
     ];
-    for (const [k, tipo, etichetta, opz = {}] of SCHEMI[sc.tipo] || []) {
-      campi.push(creaCampo(sc, k, tipo, etichetta, opz));
+    for (const [k, tipo, etichetta, opz = {}] of SCHEMI[sc.tipo] || []) campi.push(creaCampo(sc, k, tipo, etichetta, opz));
+    box.replaceChildren(...campi);
+    mostraStileScena();
+    firmaElementi = "";
+    mostraPannelloElemento();
+  }
+
+  // Stile della singola scena: animazione del testo e sfondo.
+  function mostraStileScena() {
+    const sc = scenaSelezionata();
+    const box = $("#stile-scena");
+    const sf = sc.sfondo || { tipo: "tema" };
+    const anim = elemento("select", { onchange: (e) => modifica(() => { if (e.target.value === "auto") delete sc.animazione; else sc.animazione = e.target.value; }) });
+    riempiScelta(anim, Object.assign({}, SV.ANIMAZIONI, { auto: "Quella del progetto" }), sc.animazione || "auto");
+    const tipo = elemento("select", {
+      onchange: (e) => {
+        modifica(() => {
+          if (e.target.value === "tema") delete sc.sfondo;
+          else sc.sfondo = Object.assign({ colore: "#111111", velo: 0.45 }, sc.sfondo, { tipo: e.target.value });
+        });
+        mostraStileScena();
+      },
+    });
+    riempiScelta(tipo, { tema: "Quello del tema", colore: "Colore pieno", immagine: "Foto / immagine" }, sf.tipo);
+    const campi = [
+      elemento("label", { classe: "campo" }, ["Animazione del testo", anim]),
+      elemento("label", { classe: "campo" }, ["Sfondo della scena", tipo]),
+    ];
+    if (sf.tipo === "colore") {
+      campi.push(elemento("label", { classe: "campo" }, ["Colore di sfondo", elemento("input", { type: "color", value: sf.colore || "#111111", oninput: (e) => modifica(() => (sc.sfondo.colore = e.target.value), { chiave: "sfondo-colore" }) })]));
+    }
+    if (sf.tipo === "immagine") {
+      const zona = elemento("div", { classe: "immagine-campo" });
+      campoImmagine(zona, sf.immagine, (v) => modifica(() => (sc.sfondo.immagine = v)));
+      campi.push(elemento("div", { classe: "campo" }, ["Immagine (riempie tutto lo schermo)", zona]));
+      campi.push(elemento("label", { classe: "campo" }, ["Velo scuro per leggere il testo", elemento("input", { type: "range", min: 0, max: 0.85, step: 0.05, value: sf.velo ?? 0.45, oninput: (e) => modifica(() => (sc.sfondo.velo = Number(e.target.value)), { chiave: "velo" }) })]));
     }
     box.replaceChildren(...campi);
   }
 
   function creaCampo(sc, k, tipo, etichetta, opz) {
-    const imposta = (v) => modifica(() => (sc[k] = v));
+    const imposta = (v) => modifica(() => (sc[k] = v), { chiave: `campo-${k}` });
     switch (tipo) {
       case "testo":
-        return elemento("label", { classe: "campo" }, [etichetta, elemento("input", { type: "text", value: sc[k] || "", placeholder: opz.segnaposto || "", oninput: (e) => imposta(e.target.value) })]);
+        return elemento("label", { classe: "campo" }, [etichetta, elemento("input", { type: "text", "data-chiave": k, value: sc[k] || "", placeholder: opz.segnaposto || "", oninput: (e) => imposta(e.target.value) })]);
       case "area": {
-        const ta = elemento("textarea", { rows: 2, oninput: (e) => imposta(e.target.value) });
+        const ta = elemento("textarea", { rows: 2, "data-chiave": k, oninput: (e) => imposta(e.target.value) });
         ta.value = sc[k] || "";
         return elemento("label", { classe: "campo" }, [etichetta, ta]);
       }
       case "righe": {
-        const ta = elemento("textarea", { rows: 5, oninput: (e) => imposta(e.target.value.split("\n")) });
+        const ta = elemento("textarea", { rows: 5, "data-chiave": k, oninput: (e) => imposta(e.target.value.split("\n")) });
         ta.value = (sc[k] || []).join("\n");
         return elemento("label", { classe: "campo" }, [etichetta, ta]);
       }
@@ -529,7 +839,7 @@
       }
       case "immagine": {
         const box = elemento("div", { classe: "immagine-campo" });
-        campoImmagine(box, sc[k], imposta, opz.conserva);
+        campoImmagine(box, sc[k], (v) => modifica(() => (sc[k] = v)), opz.conserva);
         return elemento("div", { classe: "campo" }, [etichetta, box]);
       }
       case "passi":
@@ -545,7 +855,7 @@
     sc.passi = sc.passi || [];
     const righe = sc.passi.map((p, i) => elemento("div", { classe: "riga-passo" }, [
       elemento("span", { classe: "numero-passo", testo: String(i + 1) }),
-      elemento("input", { type: "text", value: p.testo || "", "aria-label": `Testo del passo ${i + 1}`, oninput: (e) => modifica(() => (p.testo = e.target.value)) }),
+      elemento("input", { type: "text", value: p.testo || "", "aria-label": `Testo del passo ${i + 1}`, oninput: (e) => modifica(() => (p.testo = e.target.value), { chiave: `passo-${i}` }) }),
       elemento("button", { type: "button", classe: "mini", title: "Elimina passo", "aria-label": "Elimina passo", onclick: () => modifica(() => sc.passi.splice(i, 1), { proprieta: true }) }, "✕"),
     ]));
     return elemento("div", { classe: "campo" }, [
@@ -565,11 +875,11 @@
   function campoValori(sc) {
     sc.valori = sc.valori || [];
     const righe = sc.valori.map((v, i) => elemento("div", { classe: "riga-valore" }, [
-      elemento("input", { type: "text", value: v.prefisso || "", placeholder: "€", title: "Prima del numero", oninput: (e) => modifica(() => (v.prefisso = e.target.value)) }),
-      elemento("input", { type: "text", value: v.valore ?? "", placeholder: "1200", title: "Numero", oninput: (e) => modifica(() => (v.valore = e.target.value)) }),
-      elemento("input", { type: "text", value: v.suffisso || "", placeholder: "+", title: "Dopo il numero", oninput: (e) => modifica(() => (v.suffisso = e.target.value)) }),
+      elemento("input", { type: "text", value: v.prefisso || "", placeholder: "€", title: "Prima del numero", oninput: (e) => modifica(() => (v.prefisso = e.target.value), { chiave: `pre-${i}` }) }),
+      elemento("input", { type: "text", value: v.valore ?? "", placeholder: "1200", title: "Numero", "data-chiave": i === 0 ? "valori" : null, oninput: (e) => modifica(() => (v.valore = e.target.value), { chiave: `val-${i}` }) }),
+      elemento("input", { type: "text", value: v.suffisso || "", placeholder: "+", title: "Dopo il numero", oninput: (e) => modifica(() => (v.suffisso = e.target.value), { chiave: `suf-${i}` }) }),
       elemento("button", { type: "button", classe: "mini", title: "Elimina", "aria-label": "Elimina numero", onclick: () => modifica(() => sc.valori.splice(i, 1), { proprieta: true }) }, "✕"),
-      elemento("input", { type: "text", classe: "etichetta-valore", value: v.etichetta || "", placeholder: "Cosa misura (es. clienti)", oninput: (e) => modifica(() => (v.etichetta = e.target.value)) }),
+      elemento("input", { type: "text", classe: "etichetta-valore", value: v.etichetta || "", placeholder: "Cosa misura (es. clienti)", oninput: (e) => modifica(() => (v.etichetta = e.target.value), { chiave: `eti-${i}` }) }),
     ]));
     return elemento("div", { classe: "campo" }, [
       "Numeri (prefisso · valore · suffisso)",
@@ -580,63 +890,154 @@
     ]);
   }
 
-  // -------------------------------------------- clic e trascinamento passi
+  // ------------------------------------------ mouse sull'anteprima
 
   function puntoTela(e) {
     const r = tela.getBoundingClientRect();
     return { x: ((e.clientX - r.left) / r.width) * tela.width, y: ((e.clientY - r.top) / r.height) * tela.height };
   }
 
+  function elementoSotto(p) {
+    for (let i = stato.elementi.length - 1; i >= 0; i--) {
+      const e = stato.elementi[i];
+      const margine = 6 * pixelSchermo();
+      if (!e.nascosto && p.x >= e.x - margine && p.x <= e.x + e.w + margine && p.y >= e.y - margine && p.y <= e.y + e.h + margine) return e;
+    }
+    return null;
+  }
+
+  function sullaManiglia(p) {
+    const sel = elementoDa(stato.elemento);
+    if (!sel || sel.nascosto) return false;
+    const q = pixelSchermo();
+    const m = maniglia({ x: sel.x - 5 * q, y: sel.y - 5 * q, w: sel.w + 10 * q, h: sel.h + 10 * q });
+    return Math.abs(p.x - m.x) <= m.r * 1.6 && Math.abs(p.y - m.y) <= m.r * 1.6;
+  }
+
   tela.addEventListener("pointerdown", (e) => {
+    if (stato.inRiproduzione) {
+      pausa();
+      return;
+    }
     const sc = scenaSelezionata();
-    if (!sc || sc.tipo !== "tutorial") {
-      if (stato.inRiproduzione) pausa();
-      else riproduci();
-      return;
-    }
-    if (!inPosizionamento()) {
-      // prima porta l'anteprima in posa ferma, poi i clic piazzano i passi
-      seleziona(stato.selezionata);
-      return;
-    }
-    const { u, m } = geometriaSelezionata();
     const p = puntoTela(e);
-    const vicino = (sc.passi || []).findIndex((q) => Math.hypot(m.vx + q.x * m.vw - p.x, m.vy + q.y * m.vh - p.y) < 3 * u);
-    if (vicino >= 0) {
-      stato.trascina = vicino;
+    // tutorial: dentro il browser si piazzano i passi
+    if (sc && sc.tipo === "tutorial") {
+      if (!inPosizionamento()) seleziona(stato.selezionata);
+      const { u, m } = geometriaSelezionata();
+      const dentro = p.x >= m.vx && p.x <= m.vx + m.vw && p.y >= m.vy && p.y <= m.vy + m.vh;
+      if (dentro) {
+        const vicino = (sc.passi || []).findIndex((q) => Math.hypot(m.vx + q.x * m.vw - p.x, m.vy + q.y * m.vh - p.y) < 3.2 * u);
+        if (vicino >= 0) {
+          registraStoria(null);
+          stato.gesto = { tipo: "passo", indice: vicino };
+          tela.setPointerCapture(e.pointerId);
+          return;
+        }
+        modifica(() => sc.passi.push({ testo: `Passo ${sc.passi.length + 1}`, x: (p.x - m.vx) / m.vw, y: (p.y - m.vy) / m.vh }), { proprieta: true });
+        const campi = document.querySelectorAll(".riga-passo input");
+        const ultimo = campi[campi.length - 1];
+        if (ultimo) {
+          ultimo.focus();
+          ultimo.select();
+        }
+        return;
+      }
+    }
+    if (sullaManiglia(p)) {
+      const sel = elementoDa(stato.elemento);
+      registraStoria(null);
+      const centro = { x: sel.x + sel.w / 2, y: sel.y + sel.h / 2 };
+      stato.gesto = { tipo: "scala", id: sel.id, centro, distanza: Math.max(4, Math.hypot(p.x - centro.x, p.y - centro.y)), scala: Number(regola(sel.id, false).scala) || 1 };
       tela.setPointerCapture(e.pointerId);
       return;
     }
-    if (p.x < m.vx || p.x > m.vx + m.vw || p.y < m.vy || p.y > m.vy + m.vh) return;
-    sc.passi = sc.passi || [];
-    modifica(() => sc.passi.push({ testo: `Passo ${sc.passi.length + 1}`, x: (p.x - m.vx) / m.vw, y: (p.y - m.vy) / m.vh }), { proprieta: true });
-    const campi = document.querySelectorAll(".riga-passo input");
-    const ultimo = campi[campi.length - 1];
-    if (ultimo) {
-      ultimo.focus();
-      ultimo.select();
+    const sotto = elementoSotto(p);
+    if (!sotto) {
+      selezionaElemento(null);
+      return;
     }
+    if (stato.elemento !== sotto.id) selezionaElemento(sotto.id);
+    registraStoria(null);
+    const r = regola(sotto.id, false);
+    stato.gesto = {
+      tipo: "sposta", id: sotto.id, da: p, mosso: false,
+      dx: Number(r.dx) || 0, dy: Number(r.dy) || 0,
+      centro: { x: sotto.x + sotto.w / 2, y: sotto.y + sotto.h / 2 },
+    };
+    tela.setPointerCapture(e.pointerId);
   });
 
   tela.addEventListener("pointermove", (e) => {
-    if (stato.trascina < 0) return;
-    const sc = scenaSelezionata();
-    const { m } = geometriaSelezionata();
     const p = puntoTela(e);
-    const passo = sc.passi[stato.trascina];
-    passo.x = Math.max(0, Math.min(1, (p.x - m.vx) / m.vw));
-    passo.y = Math.max(0, Math.min(1, (p.y - m.vy) / m.vh));
+    const g = stato.gesto;
+    const u = Math.min(tela.width, tela.height) / 100;
+    if (!g) {
+      if (stato.inRiproduzione) return;
+      const sotto = elementoSotto(p);
+      const id = sotto ? sotto.id : null;
+      tela.style.cursor = sullaManiglia(p) ? "nwse-resize" : sotto ? "move" : inPosizionamento() ? "crosshair" : "default";
+      if (id !== stato.sopra) {
+        stato.sopra = id;
+        ridisegna();
+      }
+      return;
+    }
+    if (g.tipo === "passo") {
+      const sc = scenaSelezionata();
+      const { m } = geometriaSelezionata();
+      const passo = sc.passi[g.indice];
+      passo.x = Math.max(0, Math.min(1, (p.x - m.vx) / m.vw));
+      passo.y = Math.max(0, Math.min(1, (p.y - m.vy) / m.vh));
+      ridisegna();
+      return;
+    }
+    const r = regola(g.id);
+    if (g.tipo === "scala") {
+      const d = Math.hypot(p.x - g.centro.x, p.y - g.centro.y);
+      r.scala = Math.round(Math.max(0.3, Math.min(3, g.scala * (d / g.distanza))) * 100) / 100;
+      ridisegna();
+      return;
+    }
+    // sposta, con aggancio al centro dello schermo
+    let ddx = (p.x - g.da.x) / u;
+    let ddy = (p.y - g.da.y) / u;
+    if (Math.abs(ddx) + Math.abs(ddy) > 0.3) g.mosso = true;
+    const cx = g.centro.x + ddx * u;
+    const cy = g.centro.y + ddy * u;
+    stato.guide.x = Math.abs(cx - tela.width / 2) < 1.2 * u;
+    stato.guide.y = Math.abs(cy - tela.height / 2) < 1.2 * u;
+    if (stato.guide.x) ddx = (tela.width / 2 - g.centro.x) / u;
+    if (stato.guide.y) ddy = (tela.height / 2 - g.centro.y) / u;
+    r.dx = Math.round((g.dx + ddx) * 10) / 10;
+    r.dy = Math.round((g.dy + ddy) * 10) / 10;
     ridisegna();
   });
 
-  const fineTrascina = () => {
-    if (stato.trascina >= 0) {
-      stato.trascina = -1;
-      salvaPresto();
-    }
+  const fineGesto = () => {
+    const g = stato.gesto;
+    if (!g) return;
+    stato.gesto = null;
+    stato.guide = { x: false, y: false };
+    if (g.id) pulisciRegola(g.id);
+    if (g.tipo === "sposta" && !g.mosso) storia.indietro.pop(); // semplice clic: niente passo di storia
+    aggiornaPulsantiStoria();
+    salvaPresto();
+    mostraPannelloElemento();
+    ridisegna();
   };
-  tela.addEventListener("pointerup", fineTrascina);
-  tela.addEventListener("pointercancel", fineTrascina);
+  tela.addEventListener("pointerup", fineGesto);
+  tela.addEventListener("pointercancel", fineGesto);
+  tela.addEventListener("pointerleave", () => {
+    if (!stato.gesto && stato.sopra) {
+      stato.sopra = null;
+      ridisegna();
+    }
+  });
+  tela.addEventListener("dblclick", (e) => {
+    const sotto = elementoSotto(puntoTela(e));
+    if (sotto && sotto.campo) vaiAlCampo(sotto.campo);
+  });
 
   // ---------------------------------------------------------- comandi
 
@@ -650,9 +1051,45 @@
       vaiA((Number(ct.value) / 1000) * SV.durataTotale(stato.progetto));
     });
     ct.addEventListener("change", () => (cursoreTempoAttivo = false));
+    $("#annulla").addEventListener("click", annulla);
+    $("#ripeti").addEventListener("click", ripeti);
 
     document.addEventListener("keydown", (e) => {
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod && e.key.toLowerCase() === "z" && !document.querySelector("dialog[open]")) {
+        e.preventDefault();
+        e.shiftKey ? ripeti() : annulla();
+        return;
+      }
+      if (mod && e.key.toLowerCase() === "y") {
+        e.preventDefault();
+        ripeti();
+        return;
+      }
       if (e.target.closest("input, textarea, select, [contenteditable]") || document.querySelector("dialog[open]")) return;
+      const sel = elementoDa(stato.elemento);
+      if (sel && e.key.startsWith("Arrow")) {
+        e.preventDefault();
+        const passoU = e.shiftKey ? 2 : 0.5;
+        modifica(() => {
+          const r = regola(sel.id);
+          if (e.key === "ArrowLeft") r.dx = (Number(r.dx) || 0) - passoU;
+          if (e.key === "ArrowRight") r.dx = (Number(r.dx) || 0) + passoU;
+          if (e.key === "ArrowUp") r.dy = (Number(r.dy) || 0) - passoU;
+          if (e.key === "ArrowDown") r.dy = (Number(r.dy) || 0) + passoU;
+          pulisciRegola(sel.id);
+        }, { chiave: `frecce-${sel.id}` });
+        return;
+      }
+      if (sel && (e.key === "Delete" || e.key === "Backspace")) {
+        e.preventDefault();
+        nascondi(sel.id, true);
+        return;
+      }
+      if (e.key === "Escape") {
+        selezionaElemento(null);
+        return;
+      }
       if (e.code === "Space") {
         e.preventDefault();
         stato.inRiproduzione ? pausa() : riproduci();
@@ -661,7 +1098,7 @@
       else if (e.key === "Home") vaiA(0);
     });
 
-    $("#nome-progetto").addEventListener("input", (e) => modifica(() => (stato.progetto.nome = e.target.value)));
+    $("#nome-progetto").addEventListener("input", (e) => modifica(() => (stato.progetto.nome = e.target.value), { chiave: "nome" }));
     $("#formato").addEventListener("change", (e) => modifica(() => (stato.progetto.formato = e.target.value)));
     $("#tema").addEventListener("change", (e) => {
       modifica(() => {
@@ -670,13 +1107,14 @@
       });
       $("#accento").value = SV.TEMI[e.target.value].accento;
     });
-    $("#accento").addEventListener("input", (e) => modifica(() => (stato.progetto.accento = e.target.value)));
+    $("#accento").addEventListener("input", (e) => modifica(() => (stato.progetto.accento = e.target.value), { chiave: "accento" }));
     $("#carattere").addEventListener("change", (e) => modifica(() => (stato.progetto.carattere = e.target.value)));
     $("#transizione").addEventListener("change", (e) => modifica(() => (stato.progetto.transizione = e.target.value)));
-    $("#marchio-nome").addEventListener("input", (e) => modifica(() => (stato.progetto.marchio.nome = e.target.value)));
-    $("#marchio-url").addEventListener("input", (e) => modifica(() => (stato.progetto.marchio.url = e.target.value)));
+    $("#animazione").addEventListener("change", (e) => modifica(() => (stato.progetto.animazione = e.target.value)));
+    $("#marchio-nome").addEventListener("input", (e) => modifica(() => (stato.progetto.marchio.nome = e.target.value), { chiave: "marchio-nome" }));
+    $("#marchio-url").addEventListener("input", (e) => modifica(() => (stato.progetto.marchio.url = e.target.value), { chiave: "marchio-url" }));
     $("#volume").addEventListener("input", (e) => {
-      modifica(() => (stato.progetto.volume = Number(e.target.value)));
+      modifica(() => (stato.progetto.volume = Number(e.target.value)), { chiave: "volume" });
       audio.volume = Number(e.target.value);
     });
     $("#musica-file").addEventListener("change", async (e) => {
@@ -705,7 +1143,6 @@
     riempiScelta($("#nuova-scena"), SV.TIPI);
     $("#aggiungi-scena").addEventListener("click", () => aggiungi($("#nuova-scena").value));
 
-    // file di progetto
     $("#salva-file").addEventListener("click", () => {
       const blob = new Blob([JSON.stringify(stato.progetto, null, 2)], { type: "application/json" });
       scarica(blob, `${nomeSicuro(stato.progetto.nome)}.json`);
@@ -718,6 +1155,7 @@
       try {
         const p = JSON.parse(await f.text());
         if (!p || !Array.isArray(p.scene) || !p.scene.length) throw new Error("niente scene");
+        registraStoria(null);
         carica(p);
       } catch (err) {
         alert("Questo file non è un progetto di Studio Video valido.");
@@ -726,7 +1164,7 @@
     $("#copertina").addEventListener("click", () => {
       const prima = stato.posizionamento;
       stato.posizionamento = false;
-      disegnaOra();
+      disegnaOra({ pulito: true });
       tela.toBlob((b) => scarica(b, `${nomeSicuro(stato.progetto.nome)}-copertina-${stato.progetto.formato.replace(":", "x")}.png`), "image/png");
       stato.posizionamento = prima;
       ridisegna();
@@ -741,7 +1179,7 @@
     const fs = $("#scelta-modello");
     fs.replaceChildren(
       elemento("legend", { testo: "Che video ti serve?" }),
-      ...Object.entries(SV.MODELLI).map(([k, m], i) => elemento("label", { classe: "scheda-modello" }, [
+      ...Object.entries(SV.MODELLI).map(([k, m], i) => elemento("label", { classe: `scheda-modello modello-${k}` }, [
         elemento("input", { type: "radio", name: "modello", value: k, checked: i === 0 }),
         elemento("strong", { testo: m.nome }),
         elemento("small", { testo: m.descrizione }),
@@ -752,8 +1190,8 @@
       $("#etichetta-vantaggi").textContent = tut ? "Passi del tutorial (uno per riga, massimo 6)" : "Vantaggi (uno per riga, massimo 5)";
     });
     riempiScelta($("#gen-formato"), SV.FORMATI, "9:16");
-    riempiScelta($("#gen-tema"), SV.TEMI, "notte");
-    riempiScelta($("#gen-carattere"), SV.CARATTERI, "moderno");
+    riempiTemi($("#gen-tema"), "limone");
+    riempiScelta($("#gen-carattere"), SV.CARATTERI, "auto");
     campoImmagine($("#gen-immagine"), "", (v) => (datiGeneratore.immagine = v));
     campoImmagine($("#gen-logo"), "", (v) => (datiGeneratore.logo = v), true);
 
@@ -776,6 +1214,7 @@
         immagine: datiGeneratore.immagine,
         logo: datiGeneratore.logo,
       };
+      registraStoria(null);
       carica(SV.MODELLI[f.modello.value].crea(dati));
     });
   }
@@ -919,7 +1358,10 @@
     const base = progettoIniziale();
     stato.progetto = Object.assign(base, progetto);
     stato.progetto.marchio = Object.assign({ nome: "", url: "", logo: "" }, progetto.marchio || {});
+    if (!SV.TEMI[stato.progetto.tema]) stato.progetto.tema = "limone"; // progetti con temi vecchi
+    if (!SV.CARATTERI[stato.progetto.carattere]) stato.progetto.carattere = "auto";
     stato.selezionata = 0;
+    stato.elemento = null;
     stato.t = 0;
     mostraProgetto();
     mostraScene();
@@ -932,12 +1374,14 @@
     collegaComandi();
     preparaGeneratore();
     preparaEsportazione();
+    aggiornaPulsantiStoria();
     let salvato = null;
     try {
       salvato = await SV.archivio.leggi();
     } catch (e) {
       console.warn("Archivio non disponibile", e);
     }
+    await SV.caricaFont();
     await document.fonts.ready;
     adattaCornice();
     await carica(salvato && Array.isArray(salvato.scene) && salvato.scene.length ? salvato : progettoIniziale());

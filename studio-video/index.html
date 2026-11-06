@@ -5,18 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Studio Video — video promozionali e tutorial per siti</title>
 <meta name="description" content="Crea in pochi minuti video promozionali, presentazioni e tutorial per il tuo sito, in tutti i formati social.">
+<link rel="stylesheet" href="css/font.css">
 <link rel="stylesheet" href="css/editor.css">
 </head>
 <body>
 <header class="testata">
-  <div class="marchio-app"><span class="logo-app">▶</span> Studio Video</div>
+  <div class="marchio-app" aria-label="Studio Video">
+    <span class="adesivo">STUDIO</span><span class="parola">video</span>
+  </div>
   <input id="nome-progetto" class="nome-progetto" type="text" aria-label="Nome del progetto" spellcheck="false">
+  <div class="storia">
+    <button id="annulla" class="pulsante icona" type="button" title="Annulla (Ctrl+Z)" aria-label="Annulla">↶</button>
+    <button id="ripeti" class="pulsante icona" type="button" title="Ripeti (Ctrl+Maiusc+Z)" aria-label="Ripeti">↷</button>
+  </div>
   <nav class="azioni">
-    <button id="apri-generatore" class="pulsante principale-chiaro" type="button">✦ Generatore rapido</button>
+    <button id="apri-generatore" class="pulsante giallo" type="button">✦ Generatore rapido</button>
     <button id="apri-file" class="pulsante" type="button" title="Apri un progetto .json">Apri</button>
     <button id="salva-file" class="pulsante" type="button" title="Scarica il progetto come .json">Salva</button>
-    <button id="copertina" class="pulsante" type="button" title="Scarica il fotogramma attuale come immagine">Copertina PNG</button>
-    <button id="apri-esporta" class="pulsante principale" type="button">Esporta video</button>
+    <button id="copertina" class="pulsante" type="button" title="Scarica il fotogramma attuale come immagine">Copertina</button>
+    <button id="apri-esporta" class="pulsante principale" type="button">Esporta video ↗</button>
   </nav>
   <input id="file-progetto" type="file" accept=".json,application/json" hidden>
 </header>
@@ -25,20 +32,30 @@
   <!-- Colonna sinistra: progetto e scene -->
   <aside class="pannello" aria-label="Progetto e scene">
     <section class="gruppo">
-      <h2>Progetto</h2>
-      <label class="campo">Formato <select id="formato"></select></label>
-      <div class="due">
-        <label class="campo">Tema <select id="tema"></select></label>
-        <label class="campo">Accento <input id="accento" type="color"></label>
-      </div>
-      <div class="due">
-        <label class="campo">Carattere <select id="carattere"></select></label>
-        <label class="campo">Transizione <select id="transizione"></select></label>
+      <h2><span class="numero">01</span> Scene <span id="durata-totale" class="durata-tot"></span></h2>
+      <ol id="elenco-scene" class="elenco-scene"></ol>
+      <div class="aggiungi">
+        <select id="nuova-scena" aria-label="Tipo di scena da aggiungere"></select>
+        <button id="aggiungi-scena" class="pulsante" type="button">+ Aggiungi</button>
       </div>
     </section>
 
     <section class="gruppo">
-      <h2>Marchio</h2>
+      <h2><span class="numero">02</span> Look</h2>
+      <label class="campo">Tema <select id="tema"></select></label>
+      <div class="due">
+        <label class="campo">Carattere <select id="carattere"></select></label>
+        <label class="campo">Accento <input id="accento" type="color"></label>
+      </div>
+      <div class="due">
+        <label class="campo">Animazione testo <select id="animazione"></select></label>
+        <label class="campo">Transizione <select id="transizione"></select></label>
+      </div>
+      <label class="campo">Formato <select id="formato"></select></label>
+    </section>
+
+    <section class="gruppo">
+      <h2><span class="numero">03</span> Marchio</h2>
       <label class="campo">Nome <input id="marchio-nome" type="text" placeholder="Es. Prenotalo"></label>
       <label class="campo">Indirizzo del sito <input id="marchio-url" type="url" placeholder="https://..."></label>
       <div class="campo">Logo
@@ -47,26 +64,14 @@
     </section>
 
     <section class="gruppo">
-      <h2>Musica</h2>
+      <h2><span class="numero">04</span> Musica</h2>
       <div class="musica">
         <span id="musica-nome" class="tenue">Nessuna musica</span>
         <label class="pulsante piccolo">Scegli…<input id="musica-file" type="file" accept="audio/*" hidden></label>
         <button id="musica-togli" class="pulsante piccolo" type="button" hidden>Togli</button>
       </div>
       <label class="campo">Volume <input id="volume" type="range" min="0" max="1" step="0.05"></label>
-      <p class="nota">Usa solo musica di cui hai i diritti (librerie royalty-free).</p>
-    </section>
-
-    <section class="gruppo">
-      <div class="titolo-gruppo">
-        <h2>Scene</h2>
-        <span id="durata-totale" class="tenue"></span>
-      </div>
-      <ol id="elenco-scene" class="elenco-scene"></ol>
-      <div class="aggiungi">
-        <select id="nuova-scena" aria-label="Tipo di scena da aggiungere"></select>
-        <button id="aggiungi-scena" class="pulsante" type="button">+ Aggiungi</button>
-      </div>
+      <p class="nota">Solo musica di cui hai i diritti (librerie royalty-free).</p>
     </section>
   </aside>
 
@@ -74,7 +79,7 @@
   <section class="palco" aria-label="Anteprima">
     <div class="cornice-tela" id="cornice-tela">
       <canvas id="tela" width="1920" height="1080"></canvas>
-      <div id="suggerimento-tutorial" class="suggerimento" hidden>Clicca sull'anteprima per aggiungere un passo · trascina i numeri per spostarli</div>
+      <div id="suggerimento-tutorial" class="suggerimento" hidden>Clicca nel browser per aggiungere un passo · trascina i numeri per spostarli</div>
     </div>
     <div class="comandi">
       <button id="riproduci" class="pulsante tondo" type="button" aria-label="Riproduci">▶</button>
@@ -84,11 +89,20 @@
     <div id="linea-tempo" class="linea-tempo" aria-label="Scene nel tempo"></div>
   </section>
 
-  <!-- Colonna destra: proprietà della scena -->
+  <!-- Colonna destra: ritocchi e proprietà della scena -->
   <aside class="pannello" aria-label="Proprietà della scena">
+    <section class="gruppo ritocco">
+      <h2><span class="numero">✎</span> Ritocco a mano</h2>
+      <div id="pannello-elemento"></div>
+      <ul id="lista-elementi" class="lista-elementi" aria-label="Elementi della scena"></ul>
+    </section>
     <section class="gruppo">
       <h2 id="titolo-proprieta">Scena</h2>
       <div id="proprieta"></div>
+    </section>
+    <section class="gruppo">
+      <h2>Stile della scena</h2>
+      <div id="stile-scena"></div>
     </section>
   </aside>
 </main>
@@ -97,7 +111,7 @@
 <dialog id="generatore" class="finestra">
   <form method="dialog" id="modulo-generatore">
     <h2>Generatore rapido</h2>
-    <p class="tenue">Pochi dati, video già montato. Poi lo ritocchi scena per scena.</p>
+    <p class="tenue">Pochi dati, video già montato. Poi lo ritocchi pezzo per pezzo.</p>
     <fieldset class="modelli" id="scelta-modello"></fieldset>
     <div class="due">
       <label class="campo">Nome del sito o prodotto <input name="nome" type="text" required placeholder="Es. Prenotalo"></label>
@@ -119,7 +133,7 @@
       <div class="campo">Schermata del sito (facoltativa) <div class="immagine-campo" id="gen-immagine"></div></div>
       <div class="campo">Logo (facoltativo) <div class="immagine-campo" id="gen-logo"></div></div>
     </div>
-    <p class="nota">Il progetto attuale verrà sostituito. Salvalo prima se ti serve.</p>
+    <p class="nota">Il progetto attuale viene sostituito (puoi tornare indietro con Annulla).</p>
     <div class="fondo-finestra">
       <button class="pulsante" value="annulla" type="submit" formnovalidate>Annulla</button>
       <button class="pulsante principale" value="crea" type="submit">Crea il video</button>
