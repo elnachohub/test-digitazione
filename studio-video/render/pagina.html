@@ -10,6 +10,7 @@
 <!-- Pagina usata solo da render.js: disegna i fotogrammi uno per uno. -->
 <canvas id="tela"></canvas>
 <script src="../js/motore.js"></script>
+<script src="../js/modelli.js"></script>
 <script>
   "use strict";
   let progetto = null;
@@ -17,7 +18,7 @@
   const tela = document.getElementById("tela");
   const ctx = tela.getContext("2d");
   window.prepara = async (p) => {
-    progetto = p;
+    progetto = StudioVideo.normalizzaProgetto(p);
     const { w, h } = StudioVideo.dimensioni(p);
     tela.width = w;
     tela.height = h;

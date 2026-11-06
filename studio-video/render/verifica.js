@@ -25,13 +25,28 @@ if (!file) {
   process.exit(1);
 }
 
-let p = JSON.parse(fs.readFileSync(file, "utf8"));
+let p;
+try {
+  p = JSON.parse(fs.readFileSync(file, "utf8"));
+} catch (e) {
+  console.log(`${path.basename(file)}\n  ✖ ${e.code === "ENOENT" ? "file non trovato" : `JSON non valido: ${e.message}`}`);
+  process.exit(1);
+}
+const correzioni = [];
+try {
+  SV.normalizzaProgetto(p, correzioni);
+} catch (e) {
+  console.log(`${path.basename(file)}\n  ✖ ${e.message}`);
+  process.exit(1);
+}
 const cartella = path.dirname(path.resolve(file));
 if (valore("--marca")) p = SV.applicaMarca(p, leggiMarche(valore("--marca"))[0]);
 const piattaforma = valore("--piattaforma") || (p.formato === "9:16" ? "reels" : "youtube");
 
 const errori = [];
-const avvisi = [];
+const avvisi = correzioni.map((c) => `tipo sbagliato nel JSON, corretto in lettura: ${c}`);
+const vuoti = SV.daCompilare(p);
+if (vuoti.length) errori.push(`testi da compilare [[...]] nelle scene ${vuoti.map((i) => i + 1).join(", ")}: servono dati veri (numeri e recensioni non si inventano)`);
 const parole = (t) => String(t || "").split(/\s+/).filter(Boolean).length;
 // tempo per leggere: ~3,5 parole al secondo + 0,8 s per agganciare lo sguardo
 const lettura = (n) => 0.8 + n / 3.5;

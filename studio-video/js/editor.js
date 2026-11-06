@@ -179,6 +179,23 @@
 
   const storia = { indietro: [], avanti: [], ultimaChiave: null, ultimoMomento: 0 };
 
+  // Gesti sull'anteprima: l'istantanea si prende al pointerdown ma entra nella
+  // storia solo se il gesto cambia davvero qualcosa (un clic non cancella "Ripeti").
+  function preparaStoriaGesto(g) {
+    g.prima = istantanea();
+    g.registrato = false;
+    return g;
+  }
+  function confermaStoriaGesto(g) {
+    if (!g || g.registrato) return;
+    storia.indietro.push(g.prima);
+    if (storia.indietro.length > 80) storia.indietro.shift();
+    storia.avanti = [];
+    storia.ultimaChiave = null;
+    g.registrato = true;
+    aggiornaPulsantiStoria();
+  }
+
   function registraStoria(chiave) {
     const ora = Date.now();
     // le modifiche continue allo stesso campo diventano un solo passo
@@ -769,7 +786,7 @@
           type: "number", min: 1, max: 60, step: 0.5, value: sc.durata,
           oninput: (e) => {
             const v = parseFloat(e.target.value);
-            if (isFinite(v) && v >= 1) modifica(() => (sc.durata = v), { chiave: "durata" });
+            if (isFinite(v) && v >= 1) modifica(() => (sc.durata = Math.min(60, v)), { chiave: `durata-${stato.selezionata}` });
           },
         }),
       ]),
@@ -816,7 +833,7 @@
   }
 
   function creaCampo(sc, k, tipo, etichetta, opz) {
-    const imposta = (v) => modifica(() => (sc[k] = v), { chiave: `campo-${k}` });
+    const imposta = (v) => modifica(() => (sc[k] = v), { chiave: `campo-${stato.selezionata}-${k}` });
     switch (tipo) {
       case "testo":
         return elemento("label", { classe: "campo" }, [etichetta, elemento("input", { type: "text", "data-chiave": k, value: sc[k] || "", placeholder: opz.segnaposto || "", oninput: (e) => imposta(e.target.value) })]);
@@ -831,7 +848,10 @@
         return elemento("label", { classe: "campo" }, [etichetta, ta]);
       }
       case "numero":
-        return elemento("label", { classe: "campo" }, [etichetta, elemento("input", { type: "number", min: opz.min, max: opz.max, step: opz.step, value: sc[k] ?? 0, oninput: (e) => imposta(Number(e.target.value)) })]);
+        return elemento("label", { classe: "campo" }, [etichetta, elemento("input", {
+          type: "number", min: opz.min, max: opz.max, step: opz.step, value: sc[k] ?? 0,
+          oninput: (e) => imposta(Math.min(opz.max ?? Infinity, Math.max(opz.min ?? -Infinity, Number(e.target.value) || 0))),
+        })]);
       case "spunta":
         return elemento("label", { classe: "spunta" }, [elemento("input", { type: "checkbox", checked: sc[k] !== false && Boolean(sc[k] ?? true), onchange: (e) => imposta(e.target.checked) }), etichetta]);
       case "scelta": {
@@ -931,26 +951,28 @@
       if (dentro) {
         const vicino = (sc.passi || []).findIndex((q) => Math.hypot(m.vx + q.x * m.vw - p.x, m.vy + q.y * m.vh - p.y) < 3.2 * u);
         if (vicino >= 0) {
-          registraStoria(null);
-          stato.gesto = { tipo: "passo", indice: vicino };
+          stato.gesto = preparaStoriaGesto({ tipo: "passo", indice: vicino });
           tela.setPointerCapture(e.pointerId);
           return;
         }
         modifica(() => sc.passi.push({ testo: `Passo ${sc.passi.length + 1}`, x: (p.x - m.vx) / m.vw, y: (p.y - m.vy) / m.vh }), { proprieta: true });
-        const campi = document.querySelectorAll(".riga-passo input");
-        const ultimo = campi[campi.length - 1];
-        if (ultimo) {
-          ultimo.focus();
-          ultimo.select();
-        }
+        // dopo il pointerdown il browser sposta il focus: lo mettiamo nel campo subito dopo
+        e.preventDefault();
+        setTimeout(() => {
+          const campi = document.querySelectorAll(".riga-passo input");
+          const ultimo = campi[campi.length - 1];
+          if (ultimo) {
+            ultimo.focus();
+            ultimo.select();
+          }
+        }, 0);
         return;
       }
     }
     if (sullaManiglia(p)) {
       const sel = elementoDa(stato.elemento);
-      registraStoria(null);
       const centro = { x: sel.x + sel.w / 2, y: sel.y + sel.h / 2 };
-      stato.gesto = { tipo: "scala", id: sel.id, centro, distanza: Math.max(4, Math.hypot(p.x - centro.x, p.y - centro.y)), scala: Number(regola(sel.id, false).scala) || 1 };
+      stato.gesto = preparaStoriaGesto({ tipo: "scala", id: sel.id, centro, distanza: Math.max(4, Math.hypot(p.x - centro.x, p.y - centro.y)), scala: Number(regola(sel.id, false).scala) || 1 });
       tela.setPointerCapture(e.pointerId);
       return;
     }
@@ -960,13 +982,12 @@
       return;
     }
     if (stato.elemento !== sotto.id) selezionaElemento(sotto.id);
-    registraStoria(null);
     const r = regola(sotto.id, false);
-    stato.gesto = {
+    stato.gesto = preparaStoriaGesto({
       tipo: "sposta", id: sotto.id, da: p, mosso: false,
       dx: Number(r.dx) || 0, dy: Number(r.dy) || 0,
       centro: { x: sotto.x + sotto.w / 2, y: sotto.y + sotto.h / 2 },
-    };
+    });
     tela.setPointerCapture(e.pointerId);
   });
 
@@ -986,6 +1007,7 @@
       return;
     }
     if (g.tipo === "passo") {
+      confermaStoriaGesto(g);
       const sc = scenaSelezionata();
       const { m } = geometriaSelezionata();
       const passo = sc.passi[g.indice];
@@ -994,6 +1016,7 @@
       ridisegna();
       return;
     }
+    if (g.tipo === "scala") confermaStoriaGesto(g);
     const r = regola(g.id);
     if (g.tipo === "scala") {
       const d = Math.hypot(p.x - g.centro.x, p.y - g.centro.y);
@@ -1005,6 +1028,8 @@
     let ddx = (p.x - g.da.x) / u;
     let ddy = (p.y - g.da.y) / u;
     if (Math.abs(ddx) + Math.abs(ddy) > 0.3) g.mosso = true;
+    if (!g.mosso) return;
+    confermaStoriaGesto(g);
     const cx = g.centro.x + ddx * u;
     const cy = g.centro.y + ddy * u;
     stato.guide.x = Math.abs(cx - tela.width / 2) < 1.2 * u;
@@ -1022,7 +1047,6 @@
     stato.gesto = null;
     stato.guide = { x: false, y: false };
     if (g.id) pulisciRegola(g.id);
-    if (g.tipo === "sposta" && !g.mosso) storia.indietro.pop(); // semplice clic: niente passo di storia
     aggiornaPulsantiStoria();
     salvaPresto();
     mostraPannelloElemento();
@@ -1063,7 +1087,7 @@
         e.shiftKey ? ripeti() : annulla();
         return;
       }
-      if (mod && e.key.toLowerCase() === "y") {
+      if (mod && e.key.toLowerCase() === "y" && !document.querySelector("dialog[open]")) {
         e.preventDefault();
         ripeti();
         return;
@@ -1364,6 +1388,10 @@
         ? `Durata ${mmss(SV.durataTotale(stato.progetto))} per formato · file ${scelta.est.toUpperCase()}${scelta.est === "webm" ? " (questo browser non registra MP4: usa Chrome o Edge aggiornati, oppure il comando npm run render)" : ""}`
         : "Questo browser non può registrare video. Usa Chrome, Edge o Firefox aggiornati.";
       $("#avvia-esporta").disabled = !scelta;
+      const vuoti = SV.daCompilare(stato.progetto);
+      if (vuoti.length) {
+        $("#nota-codec").textContent += ` · ⚠ Testi da compilare [[...]] nelle scene ${vuoti.map((i) => i + 1).join(", ")}: metti dati veri prima di consegnare.`;
+      }
       $("#risultati").replaceChildren();
       $("#avanzamento").hidden = true;
       $("#esporta").showModal();
@@ -1425,11 +1453,15 @@
 
   async function carica(progetto) {
     if (stato.inRiproduzione) pausa();
+    const correzioni = [];
+    SV.normalizzaProgetto(progetto, correzioni);
+    if (correzioni.length) console.info("Progetto sistemato in apertura:", correzioni);
     const base = progettoIniziale();
     stato.progetto = Object.assign(base, progetto);
     stato.progetto.marchio = Object.assign({ nome: "", url: "", logo: "" }, progetto.marchio || {});
     if (!SV.TEMI[stato.progetto.tema]) stato.progetto.tema = "limone"; // progetti con temi vecchi
     if (!SV.CARATTERI[stato.progetto.carattere]) stato.progetto.carattere = "auto";
+    if (!SV.FORMATI[stato.progetto.formato]) stato.progetto.formato = "16:9";
     stato.selezionata = 0;
     stato.elemento = null;
     stato.t = 0;

@@ -8,7 +8,7 @@
     "avvia": "python3 -m http.server 8000",
     "render": "node render/render.js",
     "esempi": "node esempi/genera.js",
-    "esempi:video": "node render/render.js esempi/promo.json esempi/presentazione.json esempi/tutorial.json --tutti",
+    "esempi:video": "node render/render.js esempi/promo.json esempi/presentazione.json esempi/tutorial.json --tutti --bozza",
     "esempi:marche": "node render/render.js esempi/modello-promo.json --marca esempi/marche.json"
   },
   "devDependencies": {

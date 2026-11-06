@@ -320,14 +320,18 @@
         const visibili = Math.floor((t - inizio) * 34) - precedenti;
         if (visibili <= 0) return;
         const parte = riga.slice(0, visibili);
-        scrivi(parte);
+        // la riga resta ferma mentre si scrive: si allinea a sinistra dal suo inizio definitivo
+        ctx.font = font(tema, blocco.dim, blocco.peso, blocco.corsivo);
+        const larghezzaRiga = ctx.measureText(riga).width;
+        const x0 = allinea === "center" ? x - larghezzaRiga / 2 : allinea === "right" ? x - larghezzaRiga : x;
+        ctx.fillStyle = colore;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        ctx.fillText(parte, x0, yy);
         const ultima = i === blocco.righe.length - 1;
         const finito = inizio + primaDi / 34;
         if (visibili < riga.length || (ultima && t < finito + 1.6 && Math.floor(t * 2.5) % 2 === 0)) {
-          ctx.font = font(tema, blocco.dim, blocco.peso, blocco.corsivo);
           const w = ctx.measureText(parte).width;
-          const larghezzaRiga = ctx.measureText(riga).width;
-          const x0 = allinea === "center" ? x - larghezzaRiga / 2 : allinea === "right" ? x - larghezzaRiga : x;
           ctx.fillStyle = anim.s.tema.accento;
           ctx.fillRect(x0 + w + blocco.dim * 0.06, yy + blocco.dim * 0.08, blocco.dim * 0.45, blocco.dim * 0.9);
         }
@@ -1026,14 +1030,21 @@
     const larg = Math.min(W * 0.86, 140 * u);
     const x0 = (W - larg) / 2;
     const tit = adatta(ctx, tema, sc.titolo || "", larg, H * 0.2, (s.verticale ? 10 : 9.5) * u, 3.5 * u, "T", 1.05);
-    const gap = 2.6 * u;
-    const pad = 3 * u;
-    const raggio = 3.2 * u;
-    const testoW = larg - pad * 3 - raggio * 2;
     const spazio = H * 0.86 - tit.altezza - 6 * u;
-    let dim = (s.verticale ? 5.6 : 5.2) * u;
+    const dim0 = (s.verticale ? 5.6 : 5.2) * u;
+    let dim = dim0;
+    let gap;
+    let pad;
+    let raggio;
+    let testoW;
     let schede;
     for (;;) {
+      // con tanti punti si stringono insieme testo, schede, cerchi e spazi
+      const k = Math.max(0.5, dim / dim0);
+      gap = 2.6 * u * k;
+      pad = 3 * u * k;
+      raggio = 3.2 * u * k;
+      testoW = larg - pad * 3 - raggio * 2;
       ctx.font = font(tema, dim, 600);
       schede = punti.map((p) => aCapo(ctx, p, testoW));
       const alt = schede.reduce((a, r) => a + Math.max(raggio * 2, r.length * dim * 1.25) + pad * 2, 0) + gap * (punti.length - 1);
@@ -1377,8 +1388,27 @@
     conAlfa(ctx, fase(t, 0.2, 0.4), () => cursore(ctx, pc.x, pc.y, (s.verticale ? 5 : 4.2) * u, premuto));
   };
 
+  // "1.200" = milleduecento (italiano), "4,9" e "4.9" = quattro virgola nove,
+  // "24/7" o "10k" non sono numeri puri: si mostrano senza contatore.
+  function leggiNumero(valore) {
+    const t = String(valore == null ? "" : valore).trim();
+    if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(t)) {
+      const [intera, dec = ""] = t.split(",");
+      return { numero: Number(intera.replace(/\./g, "") + (dec ? `.${dec}` : "")), decimali: dec.length };
+    }
+    if (/^\d+([.,]\d+)?$/.test(t)) {
+      const dec = (t.split(/[.,]/)[1] || "");
+      return { numero: Number(t.replace(",", ".")), decimali: dec.length };
+    }
+    return { numero: NaN, decimali: 0 };
+  }
+
+  // Formato italiano fatto a mano: punto per le migliaia anche a 4 cifre
+  // (lo standard it-IT scriverebbe "1200") e uguale su ogni computer.
   function formattaNumero(v, decimali) {
-    return Number(v).toLocaleString("it-IT", { minimumFractionDigits: decimali, maximumFractionDigits: decimali });
+    const [intera, dec] = Math.abs(Number(v)).toFixed(decimali).split(".");
+    const conPunti = intera.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return `${Number(v) < 0 ? "-" : ""}${conPunti}${dec ? `,${dec}` : ""}`;
   }
 
   SCENE.numeri = function (ctx, sc, s) {
@@ -1423,8 +1453,7 @@
         const inizio = 0.3 + i * 0.2;
         const p = facile.fuori(fase(t, inizio, 0.6));
         const conta = facile.fuori(fase(t, inizio + 0.1, 1.5));
-        const numero = parseFloat(String(v.valore).replace(",", "."));
-        const decimali = (String(v.valore).split(/[.,]/)[1] || "").length;
+        const { numero, decimali } = leggiNumero(v.valore);
         const mostra = isFinite(numero) ? formattaNumero(numero * conta, decimali) : String(v.valore);
         conAlfa(ctx, p, () => {
           ctx.save();
@@ -1532,8 +1561,13 @@
     const dimLogo = (s.verticale ? 16 : 13) * u;
     const tit = adatta(ctx, tema, sc.titolo || "", larg, H * 0.34, (s.verticale ? 13 : 14) * u, 3.6 * u, "T", 1.04);
     const testoPuls = (sc.pulsante || "").trim();
-    const dimP = (s.verticale ? 5 : 4.6) * u;
+    let dimP = (s.verticale ? 5 : 4.6) * u;
     ctx.font = font(tema, dimP, 800);
+    // testo lungo: il pulsante si rimpicciolisce fino a stare nel 90% della larghezza
+    while (testoPuls && ctx.measureText(testoPuls).width + dimP * 3.2 > W * 0.9 && dimP > 2.2 * u) {
+      dimP *= 0.94;
+      ctx.font = font(tema, dimP, 800);
+    }
     const pw = testoPuls ? ctx.measureText(testoPuls).width + dimP * 3.2 : 0;
     const ph = testoPuls ? dimP * 2.6 : 0;
     const url = (sc.url || (s.progetto.marchio && s.progetto.marchio.url) || "").replace(/^https?:\/\//, "").replace(/\/$/, "");

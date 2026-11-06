@@ -14,6 +14,7 @@
  *   --solo "Nome"             con --marca: solo le marche il cui nome contiene il testo
  *   --fps 30                  fotogrammi al secondo
  *   --qualita 20              CRF di x264: più basso = più qualità (18-28)
+ *   --bozza                   rendi anche se restano testi da compilare [[...]]
  *
  * Richiede: Node 18+, ffmpeg nel PATH, Playwright (npm install).
  * Le immagini nel JSON possono essere data URL, indirizzi http(s) o percorsi
@@ -30,7 +31,7 @@ const FORMATI = ["16:9", "9:16", "1:1", "4:5"];
 const MIME = { ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".gif": "image/gif", ".svg": "image/svg+xml" };
 
 function leggiArgomenti(argv) {
-  const opz = { file: [], formati: null, uscita: "video", musica: null, fps: 30, qualita: 20, marca: null, solo: null };
+  const opz = { file: [], formati: null, uscita: "video", musica: null, fps: 30, qualita: 20, marca: null, solo: null, bozza: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const valore = () => {
@@ -45,6 +46,7 @@ function leggiArgomenti(argv) {
     else if (a === "--solo") opz.solo = valore().toLowerCase();
     else if (a === "--fps") opz.fps = Math.max(10, Math.min(60, Number(valore()) || 30));
     else if (a === "--qualita") opz.qualita = Number(valore()) || 20;
+    else if (a === "--bozza") opz.bozza = true;
     else if (a === "-h" || a === "--aiuto" || a === "--help") opz.aiuto = true;
     else if (a.startsWith("--")) throw new Error(`Opzione sconosciuta: ${a}`);
     else opz.file.push(a);
@@ -69,13 +71,17 @@ function incorporaImmagini(progetto, cartella) {
   for (const s of progetto.scene || []) {
     if (s.immagine) s.immagine = converti(s.immagine);
     if (s.logo) s.logo = converti(s.logo);
+    if (s.sfondo && s.sfondo.immagine) s.sfondo.immagine = converti(s.sfondo.immagine);
   }
   return progetto;
 }
 
 // La musica del progetto può essere una data URL: la scriviamo su un file temporaneo.
 function fileMusica(progetto, opz, cartella, tmp) {
-  if (opz.musica) return path.resolve(opz.musica);
+  if (opz.musica) {
+    if (!fs.existsSync(opz.musica)) throw new Error(`musica non trovata: ${opz.musica}`);
+    return path.resolve(opz.musica);
+  }
   const m = progetto.musica;
   if (!m) return null;
   const dati = /^data:([^;]+);base64,(.*)$/s.exec(m);
@@ -129,7 +135,9 @@ async function renderizza(pagina, progetto, formato, destinazione, opz, musica) 
       "-af", `volume=${volume},afade=t=in:d=0.3,afade=t=out:st=${(durata - dissolvenza).toFixed(2)}:d=${dissolvenza.toFixed(2)}`,
       "-t", durata.toFixed(3));
   }
-  argomenti.push("-movflags", "+faststart", destinazione);
+  // si scrive su un file provvisorio: un video a metà non deve mai sembrare finito
+  const provvisorio = path.join(path.dirname(destinazione), `.${path.basename(destinazione, ".mp4")}.parziale.mp4`);
+  argomenti.push("-movflags", "+faststart", provvisorio);
 
   const ff = spawn("ffmpeg", argomenti, { stdio: ["pipe", "inherit", "inherit"] });
   const fine = new Promise((ok, ko) => {
@@ -139,20 +147,33 @@ async function renderizza(pagina, progetto, formato, destinazione, opz, musica) 
   const scrivi = (buf) => new Promise((ok) => (ff.stdin.write(buf) ? ok() : ff.stdin.once("drain", ok)));
 
   const inizio = Date.now();
-  for (let i = 0; i < totale; i++) {
-    const url = await pagina.evaluate(([t]) => window.fotogramma(t, 0.94), [i / opz.fps]);
-    await scrivi(Buffer.from(url.slice(url.indexOf(",") + 1), "base64"));
-    if (i % 15 === 0 || i === totale - 1) {
-      process.stdout.write(`\r  ${formato} ${w}x${h}  ${String(Math.round(((i + 1) / totale) * 100)).padStart(3)}%  (${i + 1}/${totale} fotogrammi)`);
+  try {
+    for (let i = 0; i < totale; i++) {
+      const url = await pagina.evaluate(([t]) => window.fotogramma(t, 0.94), [i / opz.fps]);
+      await scrivi(Buffer.from(url.slice(url.indexOf(",") + 1), "base64"));
+      if (i % 15 === 0 || i === totale - 1) {
+        process.stdout.write(`\r  ${formato} ${w}x${h}  ${String(Math.round(((i + 1) / totale) * 100)).padStart(3)}%  (${i + 1}/${totale} fotogrammi)`);
+      }
     }
+    ff.stdin.end();
+    await fine;
+    fs.renameSync(provvisorio, destinazione);
+  } catch (e) {
+    ff.stdin.destroy();
+    ff.kill("SIGKILL");
+    await fine.catch(() => {});
+    fs.rmSync(provvisorio, { force: true });
+    throw new Error(`${path.basename(destinazione)} non creato: ${e.message}`);
   }
-  ff.stdin.end();
-  await fine;
   process.stdout.write(`  ✓ ${((Date.now() - inizio) / 1000).toFixed(1)} s\n`);
 }
 
 async function principale() {
   const opz = leggiArgomenti(process.argv.slice(2));
+  require("../js/motore.js");
+  require("../js/modelli.js");
+  require("../js/marca.js");
+  const SV = globalThis.StudioVideo;
   if (opz.aiuto || !opz.file.length) {
     console.log(fs.readFileSync(__filename, "utf8").split("*/")[0].replace(/^#!.*\n\/\*\n?/, "").replace(/^ \* ?/gm, ""));
     process.exit(opz.aiuto ? 0 : 1);
@@ -173,15 +194,34 @@ async function principale() {
     const marche = opz.marca ? leggiMarche(opz.marca, opz.solo) : [null];
     if (opz.marca) console.log(`${marche.length} marche da ${opz.marca}`);
     let fatti = 0;
+    const scritti = new Set();
     for (const file of opz.file) {
       const cartella = path.dirname(path.resolve(file));
-      const originale = incorporaImmagini(JSON.parse(fs.readFileSync(file, "utf8")), cartella);
+      let grezzo;
+      try {
+        grezzo = JSON.parse(fs.readFileSync(file, "utf8"));
+      } catch (e) {
+        throw new Error(`${file}: ${e.code === "ENOENT" ? "file non trovato" : `JSON non valido (${e.message})`}`);
+      }
+      const correzioni = [];
+      SV.normalizzaProgetto(grezzo, correzioni);
+      correzioni.forEach((c) => console.warn(`  ! ${file}: ${c}`));
+      if (!grezzo.scene.length) throw new Error(`${file}: nessuna scena`);
+      const originale = incorporaImmagini(grezzo, cartella);
       const musica = fileMusica(originale, opz, cartella, require("os").tmpdir());
       for (const marca of marche) {
-        const progetto = marca ? globalThis.StudioVideo.applicaMarca(JSON.parse(JSON.stringify(originale)), marca) : originale;
+        const progetto = marca ? SV.applicaMarca(JSON.parse(JSON.stringify(originale)), marca) : originale;
+        const vuoti = SV.daCompilare(progetto);
+        if (vuoti.length && !opz.bozza) {
+          throw new Error(`${file}${marca ? ` [${marca.nome}]` : ""}: testi da compilare [[...]] nelle scene ${vuoti.map((i) => i + 1).join(", ")}. Mettici dati veri (o usa --bozza per una prova interna).`);
+        }
         console.log(`• ${file}${marca ? `  [${marca.nome}]` : ""}${musica ? `  (musica: ${path.basename(musica)})` : ""}`);
         for (const formato of opz.formati || [(marca && marca.formato) || progetto.formato || "16:9"]) {
-          const destinazione = path.join(opz.uscita, nomeFile(progetto, formato, file, marca));
+          // G7: due progetti con lo stesso nome non si sovrascrivono
+          let destinazione = path.join(opz.uscita, nomeFile(progetto, formato, file, marca));
+          if (scritti.has(destinazione)) destinazione = destinazione.replace(/\.mp4$/, `-${sicuro(path.basename(file, ".json"))}.mp4`);
+          for (let n = 2; scritti.has(destinazione); n++) destinazione = destinazione.replace(/(-\d+)?\.mp4$/, `-${n}.mp4`);
+          scritti.add(destinazione);
           await renderizza(pagina, progetto, formato, destinazione, opz, musica);
           console.log(`    → ${destinazione}`);
           fatti++;

@@ -48,32 +48,26 @@
       "titolo": "I risultati parlano",
       "valori": [
         {
-          "valore": "1200",
+          "valore": "[[numero vero]]",
           "prefisso": "",
-          "suffisso": "+",
-          "etichetta": "clienti soddisfatti"
+          "suffisso": "",
+          "etichetta": "[[cosa misura, con fonte]]"
         },
         {
-          "valore": "4.9",
+          "valore": "[[numero vero]]",
           "prefisso": "",
-          "suffisso": "/5",
-          "etichetta": "valutazione media"
-        },
-        {
-          "valore": "24",
-          "prefisso": "",
-          "suffisso": "h",
-          "etichetta": "assistenza"
+          "suffisso": "",
+          "etichetta": "[[cosa misura, con fonte]]"
         }
       ]
     },
     {
       "tipo": "citazione",
-      "durata": 5,
-      "testo": "Ci ha fatto risparmiare ore ogni settimana. Non torneremmo mai indietro.",
-      "autore": "Giulia R.",
-      "ruolo": "Titolare, Studio Rossi",
-      "stelle": 5
+      "durata": 6,
+      "testo": "[[Incolla una recensione vera del cliente, con il suo permesso]]",
+      "autore": "[[Nome della persona]]",
+      "ruolo": "[[Ruolo o azienda]]",
+      "stelle": 0
     },
     {
       "tipo": "cta",

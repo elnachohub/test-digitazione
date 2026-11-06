@@ -105,7 +105,7 @@ code { background: var(--carta-2); padding: 1px 5px; border-radius: 4px; font-fa
 .pulsante:hover { background: #fff; transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--inchiostro); }
 .pulsante:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--inchiostro); }
 .pulsante:disabled { opacity: .4; cursor: not-allowed; transform: none; box-shadow: var(--ombra-piccola); }
-.pulsante.principale { background: var(--rosa); color: #fff; }
+.pulsante.principale { background: var(--rosa); color: var(--inchiostro); }
 .pulsante.principale:hover { background: #ff5a92; }
 .pulsante.giallo { background: var(--giallo); }
 .pulsante.giallo:hover { background: #ffea75; }
@@ -512,7 +512,20 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .finestra::backdrop { background: rgba(243, 238, 227, .75); backdrop-filter: blur(2px); }
 .finestra h2 { margin: 0 0 4px; font-family: "SV Archivo", sans-serif; font-weight: 400; font-size: 26px; text-transform: uppercase; }
 .finestra > form > .tenue { margin: 0 0 16px; }
-.fondo-finestra { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+.fondo-finestra {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+  /* il piede resta visibile anche quando la finestra scorre */
+  position: sticky;
+  bottom: -22px;
+  padding: 12px 0 6px;
+  background: var(--foglio);
+  border-top: 2px dashed rgba(18, 18, 18, .2);
+}
+/* azione principale prima nel DOM (Invio = azione principale), ma a destra */
+.fondo-finestra.invertito { flex-direction: row-reverse; justify-content: flex-start; }
 fieldset { border: 0; padding: 0; margin: 0 0 14px; }
 legend { font-size: 12px; font-weight: 700; color: var(--tenue); margin-bottom: 8px; padding: 0; }
 
@@ -562,11 +575,13 @@ legend { font-size: 12px; font-weight: 700; color: var(--tenue); margin-bottom: 
     border-top: var(--bordo);
   }
   body { height: auto; }
+  /* l'anteprima resta in alto e visibile mentre si scorre il pannello */
+  .palco { justify-content: flex-start; align-self: start; position: sticky; top: 0; z-index: 2; }
 }
 
 @media (max-width: 720px) {
   .griglia { display: flex; flex-direction: column; }
-  .palco { order: -1; padding: 14px; }
+  .palco { order: -1; padding: 14px; position: static; }
   .pannello:first-child { border-right: 0; border-top: var(--bordo); }
   .modelli { grid-template-columns: 1fr; }
   .due { grid-template-columns: 1fr; }

@@ -244,7 +244,10 @@ const BREVE = {
       const p = await ed.progetto();
       verifica(p.scene[0].titolo === "Titolo con emoji 🚀 e àèìòù" && p.scene[0].durata === 5, "campo titolo o durata non salvati");
       verifica((await pagina.textContent("#elenco-scene li .riassunto")).includes("🚀"), "riassunto non aggiornato");
-      verifica((await pagina.textContent("#durata-totale")) === "0:30", `durata totale: ${await pagina.textContent("#durata-totale")}`);
+      // la durata attesa si calcola dalle scene, così il test non si rompe se cambiano i modelli
+      const totale = p.scene.reduce((a, sc) => a + Math.max(1, Number(sc.durata) || 3), 0);
+      const attesa = `${Math.floor(totale / 60)}:${String(Math.floor(totale % 60)).padStart(2, "0")}`;
+      verifica((await pagina.textContent("#durata-totale")) === attesa, `durata totale: ${await pagina.textContent("#durata-totale")} invece di ${attesa}`);
       ed.pulito("la modifica dei testi");
       await ed.chiudi();
     });

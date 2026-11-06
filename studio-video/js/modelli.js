@@ -18,8 +18,10 @@
     punti: { nome: "Punti di forza", icona: "✓", vuota: () => ({ tipo: "punti", durata: 5, titolo: "Perché sceglierci", punti: ["Primo vantaggio concreto", "Secondo vantaggio concreto", "Terzo vantaggio concreto"] }) },
     schermata: { nome: "Schermata del sito", icona: "▣", vuota: () => ({ tipo: "schermata", durata: 5, titolo: "Guarda com'è semplice", testo: "Tutto quello che ti serve, in un'unica pagina.", immagine: "", dispositivo: "browser", scorri: true, url: "" }) },
     tutorial: { nome: "Tutorial (passi)", icona: "➜", vuota: () => ({ tipo: "tutorial", durata: 10, titolo: "Come funziona", immagine: "", zoom: true, url: "", passi: passiPredefiniti(["Apri il menu", "Scegli l'opzione", "Conferma con un clic"]) }) },
-    numeri: { nome: "Numeri", icona: "#", vuota: () => ({ tipo: "numeri", durata: 4.5, titolo: "I risultati parlano", valori: [{ valore: "1200", prefisso: "", suffisso: "+", etichetta: "clienti soddisfatti" }, { valore: "4.9", prefisso: "", suffisso: "/5", etichetta: "valutazione media" }, { valore: "24", prefisso: "", suffisso: "h", etichetta: "assistenza" }] }) },
-    citazione: { nome: "Recensione", icona: "❝", vuota: () => ({ tipo: "citazione", durata: 5, testo: "Ci ha fatto risparmiare ore ogni settimana. Non torneremmo mai indietro.", autore: "Giulia R.", ruolo: "Titolare, Studio Rossi", stelle: 5 }) },
+    // Numeri e recensioni NON si inventano (pubblicità ingannevole): il modello
+    // parte con segnaposto [[...]] evidenti, che verifica.js e l'esportazione bloccano.
+    numeri: { nome: "Numeri", icona: "#", vuota: () => ({ tipo: "numeri", durata: 4.5, titolo: "I risultati parlano", valori: [{ valore: "[[numero vero]]", prefisso: "", suffisso: "", etichetta: "[[cosa misura, con fonte]]" }, { valore: "[[numero vero]]", prefisso: "", suffisso: "", etichetta: "[[cosa misura, con fonte]]" }] }) },
+    citazione: { nome: "Recensione", icona: "❝", vuota: () => ({ tipo: "citazione", durata: 6, testo: "[[Incolla una recensione vera del cliente, con il suo permesso]]", autore: "[[Nome della persona]]", ruolo: "[[Ruolo o azienda]]", stelle: 0 }) },
     cta: { nome: "Invito all'azione", icona: "→", vuota: () => ({ tipo: "cta", durata: 3.5, titolo: "Provalo oggi", pulsante: "Inizia gratis", url: "", clic: true }) },
   };
 
@@ -35,7 +37,7 @@
   function righe(testo) {
     return String(testo || "")
       .split("\n")
-      .map((r) => r.replace(/^[-•*\d.)\s]+/, "").trim())
+      .map((r) => r.replace(/^\s*(?:[-•*]+|\d+[.)])\s+/, "").trim())
       .filter(Boolean);
   }
 
@@ -109,5 +111,91 @@
     },
   };
 
-  Object.assign(SV, { TIPI, MODELLI, passiPredefiniti, righe });
+  // Testi da compilare lasciati dai modelli: [[...]]
+  const DA_COMPILARE = /\[\[[^\]]*\]\]/;
+  function daCompilare(progetto) {
+    const trovati = [];
+    (progetto.scene || []).forEach((sc, i) => {
+      const testi = [sc.titolo, sc.sottotitolo, sc.testo, sc.etichetta, sc.pulsante, sc.autore, sc.ruolo, ...(sc.punti || []), ...(sc.passi || []).map((p) => p && p.testo)];
+      for (const v of sc.valori || []) if (v) testi.push(v.valore, v.prefisso, v.suffisso, v.etichetta);
+      if (testi.some((t) => DA_COMPILARE.test(String(t == null ? "" : t)))) trovati.push(i);
+    });
+    return trovati;
+  }
+
+  /**
+   * Rende sicuro un progetto scritto a mano o di una versione vecchia:
+   * testi in stringa, liste in array, numeri nei limiti, voci nulle scartate.
+   * Modifica e restituisce il progetto; se `correzioni` è un array ci annota cosa ha sistemato.
+   */
+  const CAMPI_TESTO = ["titolo", "sottotitolo", "testo", "etichetta", "pulsante", "autore", "ruolo", "url", "immagine", "logo", "dispositivo"];
+  function normalizzaProgetto(p, correzioni) {
+    const nota = (m) => correzioni && correzioni.push(m);
+    const testo = (v) => (v == null ? "" : typeof v === "string" ? v : String(v));
+    if (!p || typeof p !== "object") throw new Error("il progetto non è un oggetto JSON");
+    if (!Array.isArray(p.scene)) {
+      nota("scene non è una lista");
+      p.scene = [];
+    }
+    p.scene = p.scene.filter((sc) => sc && typeof sc === "object");
+    if (SV.ANIMAZIONI && p.animazione && !SV.ANIMAZIONI[p.animazione]) {
+      nota(`animazione "${p.animazione}" sconosciuta: uso quella dello stile`);
+      p.animazione = "auto";
+    }
+    if (SV.TRANSIZIONI && p.transizione && !SV.TRANSIZIONI[p.transizione]) {
+      nota(`transizione "${p.transizione}" sconosciuta: uso dissolvenza`);
+      p.transizione = "dissolvenza";
+    }
+    p.scene.forEach((sc, i) => {
+      const n = `scena ${i + 1}`;
+      const d = Number(sc.durata);
+      if (!isFinite(d) || d < 1) {
+        nota(`${n}: durata "${sc.durata}" non valida, uso 3 s`);
+        sc.durata = 3;
+      } else if (d > 60) {
+        nota(`${n}: durata ${d} s ridotta a 60`);
+        sc.durata = 60;
+      }
+      for (const k of CAMPI_TESTO) {
+        if (sc[k] != null && typeof sc[k] !== "string") {
+          nota(`${n}: "${k}" convertito in testo`);
+          sc[k] = testo(sc[k]);
+        }
+      }
+      if (sc.punti != null && !Array.isArray(sc.punti)) {
+        nota(`${n}: "punti" convertito in lista (una riga per punto)`);
+        sc.punti = testo(sc.punti).split("\n");
+      }
+      if (Array.isArray(sc.punti)) sc.punti = sc.punti.filter((x) => x != null).map(testo);
+      if (sc.valori != null) {
+        const prima = Array.isArray(sc.valori) ? sc.valori.length : -1;
+        sc.valori = (Array.isArray(sc.valori) ? sc.valori : []).filter((v) => v && typeof v === "object")
+          .map((v) => ({ valore: testo(v.valore), prefisso: testo(v.prefisso), suffisso: testo(v.suffisso), etichetta: testo(v.etichetta) }));
+        if (sc.valori.length !== prima) nota(`${n}: voci non valide tolte da "valori"`);
+      }
+      if (sc.passi != null) {
+        const prima = Array.isArray(sc.passi) ? sc.passi.length : -1;
+        sc.passi = (Array.isArray(sc.passi) ? sc.passi : []).filter((q) => q && typeof q === "object")
+          .map((q) => Object.assign({}, q, { testo: testo(q.testo), x: Math.min(1, Math.max(0, Number(q.x) || 0)), y: Math.min(1, Math.max(0, Number(q.y) || 0)) }));
+        if (sc.passi.length !== prima) nota(`${n}: voci non valide tolte da "passi"`);
+      }
+      if (sc.stelle != null) {
+        const st = Math.round(Number(sc.stelle));
+        const giusta = isFinite(st) ? Math.min(5, Math.max(0, st)) : 0;
+        if (giusta !== sc.stelle) nota(`${n}: stelle portate a ${giusta}`);
+        sc.stelle = giusta;
+      }
+      if (sc.regola != null && (typeof sc.regola !== "object" || Array.isArray(sc.regola))) {
+        nota(`${n}: "regola" non valida, tolta`);
+        delete sc.regola;
+      }
+      if (SV.ANIMAZIONI && sc.animazione && !SV.ANIMAZIONI[sc.animazione]) {
+        nota(`${n}: animazione "${sc.animazione}" sconosciuta, tolta`);
+        delete sc.animazione;
+      }
+    });
+    return p;
+  }
+
+  Object.assign(SV, { TIPI, MODELLI, passiPredefiniti, righe, normalizzaProgetto, daCompilare, DA_COMPILARE });
 })(typeof window !== "undefined" ? window : globalThis);
