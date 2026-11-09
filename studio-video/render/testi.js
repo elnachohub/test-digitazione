@@ -10,7 +10,8 @@
  *       se il testo tradotto chiede più tempo di lettura (0,8 s + 1 s ogni 3,5 parole)
  *
  * --sito en: le immagini prese da una cartella "sito/<lingua>/" passano a
- *   "sito/en/" se lì c'è lo stesso file (catture della versione inglese del sito).
+ *   "sito/en/" se lì c'è lo stesso file (catture della versione inglese del sito),
+ *   e l'indirizzo mostrato nel video diventa quello della versione inglese.
  * Nel foglio si cambia SOLO "testo". Nomi del cliente e del sito non si traducono.
  * Le immagini con percorso relativo restano giuste anche se l'uscita è in un'altra cartella.
  */
@@ -113,6 +114,18 @@ function immaginiDelSito(progetto, linguaSito, cartellaProgetto, avvisi) {
   for (const sc of progetto.scene) {
     for (const k of ["immagine", "logo"]) if (sc[k]) sc[k] = cambia(sc[k]);
     if (sc.sfondo && sc.sfondo.immagine) sc.sfondo.immagine = cambia(sc.sfondo.immagine);
+  }
+  // indirizzo della versione del sito in quella lingua (barra del browser e chiusura)
+  const fileSito = path.resolve(cartellaProgetto, "sito", linguaSito, "sito.json");
+  if (!fs.existsSync(fileSito)) return;
+  try {
+    const u = new URL(JSON.parse(fs.readFileSync(fileSito, "utf8")).indirizzo);
+    const nuovo = (u.hostname.replace(/^www\./, "") + u.pathname).replace(/\/$/, "");
+    const vecchio = (progetto.marchio && progetto.marchio.url) || "";
+    for (const sc of progetto.scene) if (sc.url && sc.url === vecchio) sc.url = nuovo;
+    if (progetto.marchio) progetto.marchio.url = nuovo;
+  } catch (e) {
+    avvisi.push(`indirizzo della versione ${linguaSito} non leggibile: resta ${progetto.marchio && progetto.marchio.url}`);
   }
 }
 

@@ -1159,7 +1159,9 @@
       const bx = testoBox.x + testoBox.w + 4 * u;
       box = { x: bx, y: 6 * u, w: W - bx - 4 * u, h: H - 12 * u };
     } else {
-      testoBox = { x: 7 * u, y: 8 * u, w: W - 14 * u, h: H * 0.24 };
+      // 9:16: il testo resta fuori dal 12% in alto, coperto dalle icone di Reels e TikTok
+      const zonaSicura = H / W > 1.6 ? H * 0.125 : 8 * u;
+      testoBox = { x: 7 * u, y: zonaSicura, w: W - 14 * u, h: H * 0.24 };
       const by = testoBox.y + testoBox.h + 4 * u;
       box = { x: 6 * u, y: by, w: W - 12 * u, h: H - by - 7 * u };
     }
@@ -1663,7 +1665,8 @@
           });
         }
       }, { campo: "pulsante" });
-      bersaglio = puntoRegolato(s, "pulsante", boxP, cx + pw * 0.34, py + ph / 2 + ph * 0.22);
+      // la punta del cursore sul bordo basso del pulsante: la freccia non copre il testo
+      bersaglio = puntoRegolato(s, "pulsante", boxP, cx + pw * 0.36, py + ph * 0.88);
       y += ph + gap;
     }
     if (url) {
