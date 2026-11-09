@@ -268,10 +268,11 @@
       const larga = larghe.some((w) => w > larghezzaMax);
       const alta = righe.length * dim * inter;
       if ((alta <= altezzaMax && !larga) || dim <= dimMin) {
-        // titoli: righe bilanciate (niente parola orfana sull'ultima riga).
-        // Si cerca la larghezza più stretta che non aggiunge righe.
+        // testi brevi (titoli, sottotitoli: 2-4 righe): righe bilanciate, niente
+        // parola orfana sull'ultima riga. Si cerca la larghezza più stretta che
+        // non aggiunge righe. I paragrafi lunghi restano a riempimento normale.
         let finali = righe;
-        if (peso === "T" && righe.length > 1) {
+        if (righe.length > 1 && righe.length <= 4) {
           let lo = Math.max(...String(t || "").split(/\s+/).map((p) => ctx.measureText(p).width), 1);
           let hi = larghezzaMax;
           for (let k = 0; k < 14 && hi - lo > 1; k++) {
