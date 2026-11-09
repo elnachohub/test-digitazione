@@ -268,7 +268,30 @@
       const larga = larghe.some((w) => w > larghezzaMax);
       const alta = righe.length * dim * inter;
       if ((alta <= altezzaMax && !larga) || dim <= dimMin) {
-        return { dim, righe, altezza: alta, interlinea: inter, peso, corsivo, larghezza: Math.max(0, ...larghe) };
+        // titoli: righe bilanciate (niente parola orfana sull'ultima riga).
+        // Si cerca la larghezza più stretta che non aggiunge righe.
+        let finali = righe;
+        if (peso === "T" && righe.length > 1) {
+          let lo = Math.max(...String(t || "").split(/\s+/).map((p) => ctx.measureText(p).width), 1);
+          let hi = larghezzaMax;
+          for (let k = 0; k < 14 && hi - lo > 1; k++) {
+            const mezzo = (lo + hi) / 2;
+            if (aCapo(ctx, t, mezzo).length <= righe.length) hi = mezzo;
+            else lo = mezzo;
+          }
+          finali = aCapo(ctx, t, hi);
+          // ultima riga di una parola sola: scende con lei l'ultima parola della riga sopra
+          const n = finali.length;
+          const sopra = finali[n - 2].split(" ");
+          if (finali[n - 1].split(" ").length === 1 && sopra.length >= 2) {
+            const nuova = `${sopra[sopra.length - 1]} ${finali[n - 1]}`;
+            if (ctx.measureText(nuova).width <= larghezzaMax) {
+              finali = finali.slice(0, n - 2).concat(sopra.slice(0, -1).join(" "), nuova);
+            }
+          }
+        }
+        const misure = finali.map((r) => ctx.measureText(r).width);
+        return { dim, righe: finali, altezza: finali.length * dim * inter, interlinea: inter, peso, corsivo, larghezza: Math.max(0, ...misure) };
       }
       dim = Math.max(dimMin, dim * 0.92);
     }

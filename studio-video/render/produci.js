@@ -330,7 +330,8 @@ function finisci(o) {
       // già reso e il progetto non è cambiato: si tengono gli MP4 che ci sono
       const prima = precedenti.get(riga.file);
       const mtime = (f) => (fs.existsSync(f) ? fs.statSync(f).mtimeMs : 0);
-      const progettoMs = mtime(path.join(cartella, riga.file));
+      // si rifà anche se è cambiato il motore (stesso progetto, disegno diverso)
+      const progettoMs = Math.max(mtime(path.join(cartella, riga.file)), mtime(path.join(RADICE, "js", "motore.js")));
       if (prima && prima.video && prima.video.length === formati.length && prima.formati && prima.formati.join() === formati.join()
         && prima.video.every((v) => mtime(path.join(cartella, v)) > progettoMs)) {
         riga.video = prima.video;
@@ -371,7 +372,7 @@ function paginaRevisione(ordine, righe) {
     const verifica = (r.verifica || []).map((x) => `<li>${escapeHtml(x)}</li>`).join("");
     const video = (r.video || []).map((v) => `<figure><video src="${escapeHtml(v)}" controls preload="metadata"></video><figcaption>${escapeHtml(v.split("-").pop().replace(".mp4", "").replace("x", ":"))}</figcaption></figure>`).join("");
     return `<section>${testa}
-<p class="tenue">${escapeHtml(r.file)} · ${r.durata ? r.durata.toFixed(1) : "?"} s · testi ${r.dalSito ? "presi dal sito in questa lingua" : "tradotti"}</p>
+<p class="tenue">${escapeHtml(r.file)} · ${r.durata ? r.durata.toFixed(1) : "?"} s · ${r.dalSito ? "il sito ha una versione in questa lingua (catture nella stessa lingua)" : "tradotto: catture nella lingua principale"}</p>
 <ul class="verifica">${verifica}</ul>
 <img class="foglio" src="${escapeHtml(r.foglio)}" alt="provini">
 <div class="video">${video}</div>
@@ -402,13 +403,13 @@ ${blocchi}
 }
 
 function consegna(ordine, righe, formati) {
-  const tabella = righe.map((r) => `| ${r.tipo} | ${SV.LINGUE[r.lingua].nome} | ${r.dalSito ? "sito" : "traduzione"} | ${r.durata ? `${r.durata.toFixed(1)} s` : "—"} | ${r.stato} | ${(r.video || []).length}/${formati.length} |`).join("\n");
+  const tabella = righe.map((r) => `| ${r.tipo} | ${SV.LINGUE[r.lingua].nome} | ${r.dalSito ? "sì" : "no: catture in lingua principale"} | ${r.durata ? `${r.durata.toFixed(1)} s` : "—"} | ${r.stato} | ${(r.video || []).length}/${formati.length} |`).join("\n");
   const bloccati = righe.filter((r) => r.stato === "bloccato" || r.stato === "rendering fallito").map((r) => `- **${r.tipo} · ${r.lingua}**: ${(r.verifica || []).filter((x) => x.startsWith("✖")).join(" · ")}`).join("\n");
   return `# Consegna — ${ordine.cliente}
 
 Generata da \`render/produci.js finisci\` il ${ordine.finito.slice(0, 16).replace("T", " ")}. Pagina per approvare: \`revisione.html\`.
 
-| Video | Lingua | Testi | Durata | Stato | MP4 |
+| Video | Lingua | Versione del sito | Durata | Stato | MP4 |
 |---|---|---|---|---|---|
 ${tabella}
 
