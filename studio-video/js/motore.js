@@ -1128,7 +1128,9 @@
     let testoBox;
     let box;
     if (!haTesto) {
-      box = { x: 6 * u, y: 7 * u, w: W - 12 * u, h: H - 14 * u };
+      // a tutto schermo; nello stile editoriale si lasciano liberi i filetti della cornice
+      const ed = tema.stile === "editoriale" ? 3 * u : 0;
+      box = { x: 6 * u, y: 7 * u + ed, w: W - 12 * u, h: H - 14 * u - 2 * ed };
     } else if (orizzontale) {
       testoBox = { x: 7 * u, y: 10 * u, w: W * (telefono ? 0.42 : 0.3), h: H - 20 * u };
       const bx = testoBox.x + testoBox.w + 4 * u;

@@ -35,7 +35,11 @@ da vendere a chi gestisce siti e clienti. Leggi `README.md` per le funzioni.
 ## Squadra di produzione video (quella che si vende)
 
 Dal sito del cliente al video approvato. Ruoli in `.claude/agents/`, manuale
-tecnico in `docs/formato-progetto.md`, lavoro in `docs/produzione/<cliente>/`.
+tecnico in `docs/formato-progetto.md`. Un ordine si fa con **`/produci`**
+(`.claude/skills/produci/SKILL.md`): `render/produci.js prepara` → squadra →
+`render/produci.js finisci` → revisore. Gli ordini dei clienti stanno in
+`ordini/<cliente>/` (escluso da git); `docs/produzione/` è solo per i nostri
+video dimostrativi.
 
 | Ruolo | Consegna |
 |---|---|
@@ -52,7 +56,7 @@ montatore → revisore (→ ritorno al ruolo indicato, massimo 2 giri).
 Più lingue: il video si chiude prima nella lingua principale del brief;
 poi il localizzatore fa le altre lingue, il montatore le rende e il
 revisore le approva una per una (madrelingua o revisione comprata dal cliente).
-Attrezzi: `render/cattura-sito.js`, `render/verifica.js`,
+Attrezzi: `render/produci.js`, `render/cattura-sito.js`, `render/verifica.js`,
 `render/fotogrammi.js`, `render/testi.js`, `render/render.js`. Gli MP4 non vanno nel repository.
 
 ## Squadra dell'azienda

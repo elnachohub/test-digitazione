@@ -5,10 +5,12 @@
  *   node render/testi.js estrai progetto.json [--uscita testi.json]
  *       foglio con tutti i testi del video, la scena, il limite di parole e la durata
  *
- *   node render/testi.js applica progetto.json testi-en.json --lingua en [--uscita progetto-en.json] [--durate-fisse]
+ *   node render/testi.js applica progetto.json testi-en.json --lingua en [--uscita progetto-en.json] [--durate-fisse] [--sito en]
  *       rimette i testi tradotti, imposta la lingua del video e allunga le scene
  *       se il testo tradotto chiede più tempo di lettura (0,8 s + 1 s ogni 3,5 parole)
  *
+ * --sito en: le immagini prese da una cartella "sito/<lingua>/" passano a
+ *   "sito/en/" se lì c'è lo stesso file (catture della versione inglese del sito).
  * Nel foglio si cambia SOLO "testo". Nomi del cliente e del sito non si traducono.
  * Le immagini con percorso relativo restano giuste anche se l'uscita è in un'altra cartella.
  */
@@ -98,7 +100,23 @@ function estrai(fileProgetto, uscita) {
   if (uscita) console.error(`${foglio.testi.length} testi (${p.lingua}) → ${uscita}`);
 }
 
-function applica(fileProgetto, fileTesti, lingua, uscita, durateFisse) {
+// Catture della stessa lingua del video, se la versione del sito esiste.
+function immaginiDelSito(progetto, linguaSito, cartellaProgetto, avvisi) {
+  const cambia = (p) => {
+    if (!p || /^(data:|https?:)/i.test(p)) return p;
+    const nuovo = p.replace(/(^|\/)sito\/[a-z]{2}\//, `$1sito/${linguaSito}/`);
+    if (nuovo !== p && fs.existsSync(path.resolve(cartellaProgetto, nuovo))) return nuovo;
+    if (nuovo !== p) avvisi.push(`immagine senza versione ${linguaSito}, resta quella originale: ${p}`);
+    return p;
+  };
+  if (progetto.marchio) progetto.marchio.logo = cambia(progetto.marchio.logo);
+  for (const sc of progetto.scene) {
+    for (const k of ["immagine", "logo"]) if (sc[k]) sc[k] = cambia(sc[k]);
+    if (sc.sfondo && sc.sfondo.immagine) sc.sfondo.immagine = cambia(sc.sfondo.immagine);
+  }
+}
+
+function applica(fileProgetto, fileTesti, lingua, uscita, durateFisse, linguaSito) {
   if (!SV.LINGUE[lingua]) throw new Error(`lingua "${lingua}" non supportata (lingue: ${Object.keys(SV.LINGUE).join(", ")})`);
   const p = SV.normalizzaProgetto(leggiJSON(fileProgetto));
   const originale = JSON.parse(JSON.stringify(p));
@@ -135,8 +153,10 @@ function applica(fileProgetto, fileTesti, lingua, uscita, durateFisse) {
       }
     });
   }
+  if (linguaSito) immaginiDelSito(p, linguaSito, path.dirname(path.resolve(fileProgetto)), avvisi);
   p.lingua = lingua;
-  p.nome = `${originale.nome || path.basename(fileProgetto, ".json")} (${lingua})`;
+  const nomeBase = String(originale.nome || path.basename(fileProgetto, ".json")).replace(new RegExp(`\\s${originale.lingua}$`), "");
+  p.nome = `${nomeBase} ${lingua}`;
   if (uscita) spostaImmagini(p, path.dirname(path.resolve(fileProgetto)), path.dirname(path.resolve(uscita)));
   scriviUscita(p, uscita);
   avvisi.forEach((a) => console.error(`  ⚠ ${a}`));
@@ -146,9 +166,9 @@ function applica(fileProgetto, fileTesti, lingua, uscita, durateFisse) {
 function principale(argv) {
   const [comando, ...resto] = argv;
   const valore = (k) => (resto.indexOf(k) >= 0 ? resto[resto.indexOf(k) + 1] : null);
-  const file = resto.filter((a, i) => !a.startsWith("--") && !["--uscita", "--lingua"].includes(resto[i - 1]));
+  const file = resto.filter((a, i) => !a.startsWith("--") && !["--uscita", "--lingua", "--sito"].includes(resto[i - 1]));
   if (comando === "estrai" && file[0]) return estrai(file[0], valore("--uscita"));
-  if (comando === "applica" && file[0] && file[1] && valore("--lingua")) return applica(file[0], file[1], valore("--lingua"), valore("--uscita"), resto.includes("--durate-fisse"));
+  if (comando === "applica" && file[0] && file[1] && valore("--lingua")) return applica(file[0], file[1], valore("--lingua"), valore("--uscita"), resto.includes("--durate-fisse"), valore("--sito"));
   console.log(fs.readFileSync(__filename, "utf8").split("*/")[0].replace(/^#!.*\n\/\*\n?/, "").replace(/^ \* ?/gm, ""));
   process.exit(1);
 }

@@ -12,7 +12,11 @@
  *     titolo, descrizione, titoli (h1-h3), paragrafi, pulsanti, colori,
  *     cliccabili: [{ testo, x, y }] con x,y in frazioni di computer-schermo.jpg,
  *     pronti da usare come "passi" del tutorial.
+ *   logo.png/.svg         l'icona più grande dichiarata dal sito, se c'è
+ *   in sito.json anche: lingua della pagina e versioni = { en: url, de: url } trovate
+ *   con <link hreflang> o con i selettori di lingua (/en/, "English", "DE").
  * Funziona anche con file locali: node render/cattura-sito.js ../index.html
+ * Da altri script: const { catturaSito } = require("./cattura-sito.js").
  */
 "use strict";
 
@@ -56,7 +60,7 @@ function leggiPagina() {
     .slice(0, 40);
   // colori più usati per sfondi pieni di pulsanti e intestazioni: candidati per l'accento
   const conta = new Map();
-  for (const e of document.querySelectorAll("a, button, header, nav, [class*=btn], [class*=button], h1, h2")) {
+  for (const e of document.querySelectorAll("a, button, header, nav, [class*=btn], [class*=button], [class*=bott], [class*=cta], h1, h2")) {
     if (!visibile(e)) continue;
     const st = getComputedStyle(e);
     for (const c of [st.backgroundColor, st.color]) {
@@ -70,50 +74,109 @@ function leggiPagina() {
     }
   }
   const sfondo = getComputedStyle(document.body).backgroundColor;
+  // versioni del sito in altre lingue: <link hreflang>, poi selettori di lingua (/en/, "English", "DE"...)
+  const assoluto = (h) => {
+    try {
+      return new URL(h, location.href).href;
+    } catch (e) {
+      return "";
+    }
+  };
+  const versioni = {};
+  for (const l of document.querySelectorAll('link[rel="alternate"][hreflang]')) {
+    const lg = l.getAttribute("hreflang").slice(0, 2).toLowerCase();
+    if (/^[a-z]{2}$/.test(lg) && !versioni[lg]) versioni[lg] = assoluto(l.getAttribute("href"));
+  }
+  const NOMI = { it: /^(it|ita|italiano)$/i, en: /^(en|eng|english)$/i, es: /^(es|esp|español|espanol)$/i, fr: /^(fr|fra|français|francais)$/i, de: /^(de|deu|deutsch)$/i, pt: /^(pt|por|português|portugues)$/i, nl: /^(nl|nederlands)$/i, pl: /^(pl|polski)$/i };
+  for (const a of document.querySelectorAll("a[href]")) {
+    const h = a.getAttribute("hreflang");
+    const testo = pulito(a.innerText || a.getAttribute("aria-label") || a.title);
+    let lg = h ? h.slice(0, 2).toLowerCase() : Object.keys(NOMI).find((k) => NOMI[k].test(testo));
+    if (!lg) {
+      const m = /^\/(it|en|es|fr|de|pt|nl|pl)(\/|$)/.exec(new URL(assoluto(a.getAttribute("href")) || location.href).pathname);
+      if (m && testo.length <= 12) lg = m[1];
+    }
+    if (lg && /^[a-z]{2}$/.test(lg) && !versioni[lg]) versioni[lg] = assoluto(a.getAttribute("href"));
+  }
+  const icone = [...document.querySelectorAll('link[rel~="apple-touch-icon"], link[rel~="icon"]')]
+    .map((l) => ({ href: assoluto(l.getAttribute("href")), lato: parseInt((l.getAttribute("sizes") || "0").split("x")[0], 10) || (/apple/.test(l.rel) ? 180 : /svg/.test(l.type || l.href) ? 512 : 32) }))
+    .sort((x, y) => y.lato - x.lato);
   return {
+    lingua: (document.documentElement.lang || "").slice(0, 2).toLowerCase(),
+    versioni,
+    icona: icone.length ? icone[0].href : assoluto("/favicon.ico"),
     indirizzo: location.href,
     titolo: document.title,
     descrizione: meta("description") || meta("og:description"),
     titoli: testi("h1, h2, h3", 25),
     paragrafi: testi("p, li", 30),
-    pulsanti: testi("button, a[class*=btn], a[class*=button], [role=button], input[type=submit]", 15),
+    pulsanti: testi("button, a[class*=btn], a[class*=button], a[class*=bott], a[class*=puls], a[class*=cta], a[class*=knop], a[class*=bouton], a[class*=boton], [role=button], input[type=submit]", 15),
     colori: { sfondoPagina: sfondo, accentiCandidati: [...conta.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([c]) => c) },
     cliccabili,
   };
 }
 
-(async () => {
-  const o = argomenti(process.argv.slice(2));
-  if (!o.url) {
-    console.log(fs.readFileSync(__filename, "utf8").split("*/")[0].replace(/^#!.*\n\/\*\n?/, "").replace(/^ \* ?/gm, ""));
-    process.exit(1);
-  }
+/**
+ * Cattura un sito nella cartella: tre JPG, logo (se trovato) e sito.json.
+ * `browser` facoltativo (riuso tra più catture). Restituisce i dati di sito.json.
+ */
+async function catturaSito(url, cartella, opzioni = {}) {
   const { chromium, devices } = require("playwright");
-  fs.mkdirSync(o.uscita, { recursive: true });
-  const browser = await chromium.launch();
+  const attesa = opzioni.attesa == null ? 1500 : opzioni.attesa;
+  fs.mkdirSync(cartella, { recursive: true });
+  const proprio = !opzioni.browser;
+  const browser = opzioni.browser || (await chromium.launch());
   const vai = async (pagina) => {
-    await pagina.goto(o.url, { waitUntil: "load", timeout: 45000 });
+    await pagina.goto(url, { waitUntil: "load", timeout: 45000 });
     await pagina.waitForLoadState("networkidle", { timeout: 8000 }).catch(() => {});
-    await pagina.waitForTimeout(o.attesa);
+    await pagina.waitForTimeout(attesa);
   };
   try {
     const computer = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     await vai(computer);
     const dati = await computer.evaluate(leggiPagina);
-    await computer.screenshot({ path: path.join(o.uscita, "computer-schermo.jpg"), type: "jpeg", quality: 88 });
+    await computer.screenshot({ path: path.join(cartella, "computer-schermo.jpg"), type: "jpeg", quality: 88 });
     const altezza = await computer.evaluate(() => document.documentElement.scrollHeight);
-    await computer.screenshot({ path: path.join(o.uscita, "computer-pagina.jpg"), type: "jpeg", quality: 85, fullPage: true, clip: altezza > 9000 ? { x: 0, y: 0, width: 1440, height: 9000 } : undefined });
+    await computer.screenshot({ path: path.join(cartella, "computer-pagina.jpg"), type: "jpeg", quality: 85, fullPage: true, clip: altezza > 9000 ? { x: 0, y: 0, width: 1440, height: 9000 } : undefined });
+    dati.file = { computerPagina: "computer-pagina.jpg", computerSchermo: "computer-schermo.jpg", telefonoPagina: "telefono-pagina.jpg" };
+    // logo: l'icona più grande dichiarata dal sito (PNG, JPG o SVG)
+    if (dati.icona) {
+      const r = await computer.request.get(dati.icona, { timeout: 10000 }).catch(() => null);
+      const tipo = r && r.ok() ? (r.headers()["content-type"] || "") : "";
+      const est = /svg/.test(tipo) ? ".svg" : /png/.test(tipo) ? ".png" : /jpe?g/.test(tipo) ? ".jpg" : "";
+      if (est) {
+        fs.writeFileSync(path.join(cartella, `logo${est}`), await r.body());
+        dati.file.logo = `logo${est}`;
+      }
+    }
+    await computer.close();
     const telefono = await browser.newPage({ ...devices["iPhone 13"] });
     await vai(telefono);
-    await telefono.screenshot({ path: path.join(o.uscita, "telefono-pagina.jpg"), type: "jpeg", quality: 85, fullPage: true });
+    const altezzaTel = await telefono.evaluate(() => document.documentElement.scrollHeight);
+    await telefono.screenshot({ path: path.join(cartella, "telefono-pagina.jpg"), type: "jpeg", quality: 85, fullPage: true, clip: altezzaTel > 9000 ? { x: 0, y: 0, width: 390, height: 9000 } : undefined });
+    await telefono.close();
     dati.catturato = new Date().toISOString();
-    dati.file = { computerPagina: "computer-pagina.jpg", computerSchermo: "computer-schermo.jpg", telefonoPagina: "telefono-pagina.jpg" };
-    fs.writeFileSync(path.join(o.uscita, "sito.json"), JSON.stringify(dati, null, 2) + "\n");
-    console.log(`"${dati.titolo}" · ${dati.titoli.length} titoli · ${dati.cliccabili.length} cliccabili · accenti ${dati.colori.accentiCandidati.join(" ") || "—"} → ${o.uscita}/`);
+    fs.writeFileSync(path.join(cartella, "sito.json"), JSON.stringify(dati, null, 2) + "\n");
+    return dati;
   } finally {
-    await browser.close();
+    if (proprio) await browser.close();
   }
-})().catch((e) => {
-  console.error("Errore:", e.message);
-  process.exit(1);
-});
+}
+
+module.exports = { catturaSito };
+
+if (require.main === module) {
+  (async () => {
+    const o = argomenti(process.argv.slice(2));
+    if (!o.url) {
+      console.log(fs.readFileSync(__filename, "utf8").split("*/")[0].replace(/^#!.*\n\/\*\n?/, "").replace(/^ \* ?/gm, ""));
+      process.exit(1);
+    }
+    const dati = await catturaSito(o.url, o.uscita, { attesa: o.attesa });
+    const altre = Object.keys(dati.versioni).filter((l) => l !== dati.lingua);
+    console.log(`"${dati.titolo}" · lingua ${dati.lingua || "?"}${altre.length ? ` · anche in ${altre.join(", ")}` : ""} · ${dati.titoli.length} titoli · ${dati.cliccabili.length} cliccabili · accenti ${dati.colori.accentiCandidati.join(" ") || "—"}${dati.file.logo ? " · logo" : ""} → ${o.uscita}/`);
+  })().catch((e) => {
+    console.error("Errore:", e.message);
+    process.exit(1);
+  });
+}

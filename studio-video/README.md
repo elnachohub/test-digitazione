@@ -94,6 +94,18 @@ npm run render -- modello.json --marca marche.json --solo forno --tutti
 npm run esempi:marche                                         # demo: 3 clienti, 3 video
 ```
 
+**Dal link ai video** (un ordine intero, parte meccanica):
+
+```bash
+node render/produci.js prepara https://sito.it --cliente "Nome" --lingue it,en,de
+#   bozze con i testi del sito in ogni lingua che ha una versione, fogli da tradurre per le altre
+node render/produci.js finisci --cartella ordini/nome
+#   controlli, provini, MP4 in 4 formati, revisione.html per approvare, consegna.md
+```
+
+In Claude Code il comando `/produci` fa lavorare la squadra di agenti tra i
+due passaggi (testi, look, traduzioni, revisione).
+
 **Un video × N lingue**:
 
 ```bash

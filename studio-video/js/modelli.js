@@ -319,5 +319,22 @@
     return p;
   }
 
-  Object.assign(SV, { TIPI, MODELLI, TESTI, testiModello: testi, passiPredefiniti, righe, normalizzaProgetto, daCompilare, DA_COMPILARE });
+  // Durata minima per leggere una scena: stesse soglie di render/verifica.js
+  // (0,8 s + 1 s ogni 3,5 parole; punti con tempo d'entrata; ≥ 2,5 s per passo).
+  function durataMinima(sc) {
+    const parole = (t) => String(t || "").split(/\s+/).filter(Boolean).length;
+    const lettura = (n) => 0.8 + n / 3.5;
+    let n = parole(sc.titolo) + parole(sc.sottotitolo) + parole(sc.testo) + parole(sc.etichetta);
+    if (sc.tipo === "punti") {
+      const pt = (sc.punti || []).filter((x) => String(x).trim());
+      n += pt.reduce((a, x) => a + parole(x), 0);
+      return 0.45 + pt.length * 0.5 + lettura(n) * 0.6;
+    }
+    if (sc.tipo === "tutorial") return Math.max(lettura(n), 1.1 + (sc.passi || []).length * 2.5);
+    if (sc.tipo === "cta") return lettura(n + parole(sc.pulsante)) + 0.5;
+    if (sc.tipo === "schermata") return Math.max(3.5, lettura(n) + 1);
+    return lettura(n);
+  }
+
+  Object.assign(SV, { durataMinima, TIPI, MODELLI, TESTI, testiModello: testi, passiPredefiniti, righe, normalizzaProgetto, daCompilare, DA_COMPILARE });
 })(typeof window !== "undefined" ? window : globalThis);

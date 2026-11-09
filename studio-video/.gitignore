@@ -4,3 +4,5 @@ video/
 *.webm
 .DS_Store
 provini/
+# materiale dei clienti: mai nel repository (vedi docs/squadra/legale.md)
+ordini/
