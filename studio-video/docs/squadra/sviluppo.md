@@ -30,3 +30,17 @@ Verifica: `node test/collaudo.js --bug` → **13/13 flussi superati, 0/8 bug not
   generatore che ricorda la schermata precedente, immagini relative aperte nell'editor.
 - Designer: zona sicura 9:16 automatica nel motore (12% alto, 20% basso),
   stelle poco visibili nello stile editoriale, a capo dei titoli nello stile sfumato.
+
+## Giro 2 (9 novembre 2026) — priorità 1: dal link ai video in N lingue
+
+Fatto: `render/produci.js` (prepara/finisci), comando `/produci`, `testi.js --sito`,
+catture multilingua con logo, bilanciamento delle righe, zona sicura 9:16 nelle
+schermate, cursore fuori dal testo del pulsante. Collaudo: ordine di prova Lume
+(it, en dal sito; de tradotto) con tutta la squadra, 2 giri di revisione, 6/6 approvati.
+
+### Aperto (dalla revisione di Lume, non bloccante)
+
+- Nota 10: in 9:16, con il testo sopra, il browser della schermata scende nel 20% basso: il motore dovrebbe rimpicciolirlo invece di spingerlo giù.
+- Nota 12: il bilanciamento non vale per i punti (parola sola a capo dentro le schede): stessa logica di `adatta()` da applicare in `SCENE.punti`.
+- I ritocchi (`regola`) valgono per tutti i formati: servirebbero ritocchi per formato.
+- Collaudo su 3 siti veri (criterio 5 della specifica 01): serve un ambiente con rete.
