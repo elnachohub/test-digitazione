@@ -1,128 +1,135 @@
-# Marketing — giro di analisi 1 (6 novembre 2026)
+# Marketing — giro 2: Italia + lingue, Regno Unito (9 novembre 2026)
 
-Allineato a `docs/squadra/ceo.md`: prima il **servizio white-label "video
-fatti dagli agenti" per piccole web agency italiane**, poi il software.
-Prezzi dei concorrenti **non verificati** (niente rete esterna): da
-controllare sui loro siti prima di citarli; in pagina non li citiamo.
+Allineato a `docs/squadra/ceo.md` (giro 2) e `docs/roadmap.md`: servizio
+white-label per web agency, Italia subito (anche con clienti esportatori),
+Regno Unito + Irlanda come test dal mese 2. Prezzi dei concorrenti,
+directory, eventi e regole di contatto UK **non verificati** (niente rete
+esterna): da controllare prima di usarli.
 
-## 1. Cosa ho verificato (e cosa quindi si può dire)
+## 1. Cosa ho verificato (e quindi si può dire)
 
-Provato in Chromium 1440×900 (`127.0.0.1:8783`, console senza errori) e da
-riga di comando.
+Chromium 1440×900, console pulita, e riga di comando.
 
 | Si può dire | Prova |
 |---|---|
-| Dati di un cliente → promo 9:16 di 15 s montato | Generatore rapido: 1,4 s dal clic al video |
-| Un progetto, 4 formati (16:9, 9:16, 1:1, 4:5) | finestra Esporta |
-| MP4 dal browser | 15 s di video registrati in 15,3 s, 5,9 MB |
-| Un modello × N marche | `{slogan}`, `{vantaggi}`… riempiti con *Applica* (Palestra Nova) e da `fotogrammi.js --marca` (Forno Bianchi, Prenotalo): stessi testi, tre look diversi |
-| Il sito vero nel video, tutorial col cursore | `docs/produzione/test-digitazione/provini/tutorial-16x9-foglio.jpg`: catture reali, clic numerati |
-| Nessun nostro marchio nei video | nessuna filigrana nei provini |
+| Dati di un cliente → promo 9:16 di 15 s | Generatore rapido, 1,4 s |
+| Un progetto, 4 formati; MP4 dal browser | 15 s registrati in 15,3 s, 5,9 MB |
+| Un modello × N marche | *Applica* nell'editor; `fotogrammi.js --marca` (Forno, Prenotalo) |
+| Il sito vero nel video, tutorial col cursore | `docs/produzione/test-digitazione/provini/` |
+| Nessun nostro marchio nei video | nessuna filigrana |
+| **Stesso video in un'altra lingua** | `render/testi.js` estrai → tradotto a mano → applica: promo Prenotalo in EN e DE, stesse immagini e stile, durate allungate da sole (EN 15 → 16,5 s), parole tedesche lunghe dentro il 9:16 senza tagli |
 
-**Da NON dire oggi** (vero solo dopo le priorità del CEO):
-- "Voce" o "musica inclusa": niente audio pronto (priorità 5); l'extra voce
-  a 39 € resta fuori dalla pagina finché non esiste.
-- "Link di approvazione": non esiste (priorità 4); si consegna un download.
-- "Fai tutto da solo nel software": la serie gira solo da riga di comando;
-  nel browser una marca alla volta; marche solo nel browser (IndexedDB).
-- "Dall'URL al video in automatico": la squadra ha fatto cattura, copione e
-  progetti del nostro sito, ma nessun giro completo con revisione. Si dice
-  "agenti + controllo umano".
-- Il generatore mette testi fissi non scritti dal cliente ("Novità", "In 3
-  parole?", "Provalo adesso", `js/modelli.js:69-72`) e, senza schermata, un
-  telefono finto. **Nessun demo o campione esce così**: ritocco a mano
-  finché non arriva la priorità 2.
+**Da NON dire oggi**: voce, musica, link di approvazione (priorità 5 e 4);
+"lo fai da solo nel software"; "dall'URL al video in automatico" (si dice
+"agenti + controllo umano"); "traduzione garantita" (garantisce chi approva
+la lingua o la revisione madrelingua a pagamento, partner ancora da trovare);
+lingue non provate dalla QA (in pagina solo IT, EN, DE, FR, ES, PT, NL
+dopo il suo collaudo). I testi di riserva "Novità / In 3 parole? / Provalo
+adesso" esistono **anche tradotti** ("New / In three words? / Try it now",
+`js/modelli.js:71-74`), e senza schermata compare un sito finto (lo segnala
+`verifica.js`): nessun campione esce così, in nessuna lingua.
 
 ## 2. Posizionamento
 
-**Per chi**: titolare di una web agency italiana da 2-10 persone (o di un
-freelance con 15+ clienti) che gestisce siti e social di PMI locali.
+| | Italia | Regno Unito / Irlanda |
+|---|---|---|
+| Per chi | web agency 2-10 persone, 20-100 PMI clienti | digital agency 2-15 persone che rivende già white-label (SEO, PPC, siti) |
+| Dolore | "fammi anche un video": a mano mangia il margine, dire no regala il cliente | video brevi richiesti da tutti i clienti; farli in casa costa ore, darli fuori costa caro e lento |
+| In più | i clienti esportatori vogliono lo stesso video in EN/DE/FR | prezzo fisso per video, 48 h, nessun nome nostro |
+| Frase | **"Mandaci il link. Rivendi il video."** | **"Send the link. Sell the video."** |
 
-**Dolore**: i clienti chiedono "fammi anche un video per i social". Farlo a
-mano (Canva/CapCut, screenshot, revisioni) mangia il margine; dire di no
-regala il cliente a chi lo fa. E serve ogni mese, per tutti i clienti.
+**Perché noi e non Canva / CapCut / Animoto / Synthesia**: il materiale è il
+sito (niente riprese); un modello diventa N video, uno per cliente; le
+lingue sono testi a schermo adattati nei 4 formati, non doppiaggi; white-label
+con una persona che controlla. Perdiamo su librerie, audio, voce e avatar:
+lo diciamo nelle domande frequenti.
 
-**Promessa**: ci mandi il link del sito del cliente, ricevi i video pronti
-nei 4 formati, senza il nostro nome, da rivendere col tuo.
+## 3. Nome (il CEO lo vuole inventato e provato in EN/DE/FR/ES)
 
-**Perché noi**
+Da controllare su EUIPO e UK IPO, domini e significati (non fatto).
+1. **Moltiplo** — ora la prima scelta: "multiplo/múltiplo/multiple" si capisce
+   in IT, ES, PT, FR, EN; dice il moltiplicatore (marche e lingue).
+2. **Rullo** — corto, neutro all'estero (in spagnolo "rulo" = bigodino: da
+   valutare). Facile al telefono.
+3. **Dalsito** — solo per l'Italia: fuori non significa nulla. Scartato se
+   il marchio deve essere unico.
 
-| Alternativa | Cosa le manca per l'agenzia |
-|---|---|
-| Canva | lo fai tu, cliente per cliente; il sito vero non scorre da solo nel video |
-| CapCut | serve materiale girato; nessun archivio di marche dei clienti |
-| Animoto | un video alla volta, pensato per chi ha foto e clip proprie |
-| Synthesia / HeyGen | avatar parlanti; non mostrano il sito del cliente |
+## 4. Italia: primi 10 clienti e pacchetto lingue
 
-Il nostro vantaggio: **il materiale è il sito** (niente riprese), **un modello
-diventa N video, uno per cliente**, **white-label**, **in italiano, con una
-persona che controlla**. Dove perdiamo (librerie, audio, lingue) non lo
-nascondiamo: lo diciamo nelle domande frequenti.
+**Sequenza (regola del legale)**: LinkedIn a mano → telefonata ("posso
+mandarle un video fatto sul vostro sito?") → email solo dopo il sì; niente
+WhatsApp a freddo. Messaggi in `docs/vendita/messaggi.md`.
+- Lista: 150 agenzie in 3 settimane (Google Maps, LinkedIn, partner Shopify,
+  WooCommerce, Google Partner, Clutch/Sortlist Italia) + **30 con clienti
+  esportatori** (CEO).
+- Campione sul sito dell'agenzia stessa. Altri canali: LinkedIn del titolare
+  3 post a settimana, comunità WordPress, 20 contatti caldi.
+- Attesa da misurare: 150 contatti → 15 risposte → 10 Prove → 3 abbonamenti.
+- **Fondatori** (deciso dal CEO): Agenzia 10 −20% per 12 mesi alle prime 10;
+  rimborso della Prova se il video non è pubblicabile per errori nostri.
 
-**Frase da ricordare**: **"Mandaci il link. Rivendi il video."**
+**Come vendere le lingue** (+39 € a lingua, Export 199 € = 1 video in 5 lingue)
+- **Domanda al primo contatto**: "Quanti vostri clienti vendono o ospitano
+  clienti dall'estero?" Con 5 o più si parla di lingue prima che di prezzo.
+- **Dove**: agenzie nelle zone di vino, cibo, arredo, moda e turismo (Langhe,
+  Valpolicella, Franciacorta, Garda, Toscana, Brianza, Alto Adige).
+- **Quando**: agganci di calendario: fiere di settore (es. Vinitaly in
+  primavera), apertura delle prenotazioni estive, Natale per l'export.
+- **Offerta d'ingresso**: alla Prova si aggiunge una lingua (149 + 39 €);
+  l'Export a 199 € è il prodotto "prima della fiera".
+- **Messaggio**: "Lo stesso video, nelle lingue dei clienti del tuo cliente.
+  Tu lo rivendi a 70-120 € a lingua." Mai "traduzione perfetta": "testi
+  adattati, approvati da chi conosce la lingua".
+- **Agenzie di traduzione** come rivenditori: 5 contatti LinkedIn nel
+  trimestre; loro garantiscono la lingua, noi facciamo il video.
+  [Listino rivenditore: da decidere col CEO.]
+- **Agenzie Shopify/WooCommerce** con negozi che vendono in più paesi UE.
 
-## 3. Nome: tre proposte al posto di "Studio Video"
+## 5. Regno Unito + Irlanda: piano di test
 
-Da controllare tutti su UIBM/EUIPO e domini `.it`/`.com` (non fatto: niente
-rete). Il nome lo vede l'agenzia, non il suo cliente (white-label).
+**Prima del primo campione** (soglie CEO): pipeline sotto 20 minuti umani a
+video, revisore inglese a chiamata, priorità 2 fatta, `page-en.md` online
+con piè di pagina e termini in inglese del legale, Stripe in GBP, regola
+contatti UK del legale.
 
-1. **Dalsito** — dice da dove parte il video e che non serve girare nulla;
-   buono per la ricerca ("video dal sito"). Preferito per la fase 1.
-2. **Moltiplo** — il punto forte (un modello × tutte le marche); adatto al
-   software della fase 2. Parola comune: serve un logo forte.
-3. **Rullo** — pellicola e "macchina che va", produzione in serie; una
-   parola, facile da dire al telefono.
+**Canali**
+1. **Email a società con video-campione** sul sito dell'agenzia (in UK
+   probabilmente lecita verso società con opt-out, non verso ditte
+   individuali e partnership: **da confermare con il legale**). Lista di 100
+   da Clutch UK, Sortlist UK, DesignRush, Google Partners, partner Shopify e
+   HubSpot UK; città: Manchester, Leeds, Bristol, Birmingham, Brighton,
+   Glasgow, Dublino per l'Irlanda.
+2. **LinkedIn a mano** in parallelo (stessi 100, mai automazione).
+3. **Comunità di titolari d'agenzia** (es. Agency Hackers) ed eventi
+   (es. brightonSEO): contenuto utile, non annunci. Da verificare.
+- **Messaggio**: "Add short-form video to your white-label menu. Send us a
+  client's link, get the videos in 4 formats in 48 hours, with no name but
+  yours." Si dice che siamo in Italia: assistenza in inglese, per iscritto,
+  in orario italiano (un'ora avanti al UK).
+- **Offerta**: Trial £129 scalata dal primo mese entro 30 giorni; prime 5
+  agenzie UK: Agency 10 −20% per 12 mesi (£472/mese) in cambio di citazione;
+  rimborso della Trial se il video non è pubblicabile per errori nostri.
+- **Lingue nel UK**: non il messaggio principale; solo per e-commerce che
+  vendono nell'UE ("your client ships to France and Germany?").
+- **Soglie**: 100 campioni in 6 settimane; meno di 3 Trial pagate = stop.
+  Settimanale: campioni, risposte, Trial, minuti umani, minuti di revisore.
 
-## 4. Primi 10 clienti paganti (10 agenzie che pagano almeno la Prova, 3 in abbonamento)
+## 6. Video demo da fare CON il prodotto
 
-**Messaggio**: "Ti mando un video già fatto sul tuo sito. Se ti piace, lo
-facciamo per i tuoi clienti, col tuo marchio."
+1. **"Un modello, tre clienti"** (9:16): `npm run esempi:marche`, testi di
+   riserva tolti e schermate vere. Per il UK, tre marche d'esempio inglesi.
+2. **"Dal link al video: il nostro sito"** (16:9, ~40 s): tutorial di Test di
+   digitazione fatto dalla squadra. "Il primo cliente siamo noi".
+3. **"Rivendi un video in 4 clic"**: tutorial dell'editor (interfaccia anche
+   in inglese per la versione UK).
+4. **"Un video, cinque lingue"** (9:16): lo stesso promo in IT, EN, DE, FR,
+   ES con `render/testi.js`, montati in fila. È la demo del pacchetto Export
+   e la prova che le parole tedesche lunghe stanno nel formato.
 
-**Canale n. 1 — contatto diretto con video-campione** (come il CEO).
-- Lista: 150 agenzie in 3 settimane da Google Maps ("web agency", "agenzia
-  comunicazione" in 10 capoluoghi del Nord e Centro), LinkedIn ("titolare"
-  + "web agency"), elenchi partner pubblici di Shopify, WooCommerce e Google
-  Partner, Clutch e Sortlist Italia.
-- Campione **sul sito dell'agenzia stessa**, non di un suo cliente: è più
-  personale, l'agenzia è il destinatario e si evita il problema dei diritti
-  sul sito di un terzo (il CEO l'ha girato al legale). Promo 9:16 da 15-20 s.
-- Ritmo: 10 campioni a settimana finché la priorità 1 non abbassa i minuti
-  umani, poi 30. Email → LinkedIn dopo 3 giorni → telefonata se apre.
-- Attesa (ipotesi da misurare): 150 contatti → 15 risposte → 10 Prove → 3
-  abbonamenti.
+## 7. Richieste
 
-**Canale 2 — LinkedIn del titolare**: 3 post a settimana con i video veri;
-chi riceve il campione trova un profilo credibile.
-**Canale 3 — comunità**: meetup e gruppi WordPress italiani, WordCamp,
-gruppi Facebook di freelance e agenzie: un contenuto utile, non un annuncio.
-**Canale 4 — rete del titolare**: 20 contatti caldi per i primi 2-3 casi.
-
-**Offerta di lancio "Agenzia fondatrice"** (proposta, decide il CEO):
-- Prova 149 € scalata dal primo mese se si abbona entro 30 giorni (CEO).
-- Ai primi 10: prezzo Agenzia 10 bloccato 12 mesi [sconto da decidere col
-  CEO], in cambio di permesso di citarli e 20 minuti di intervista.
-- Prova "soddisfatti o rifatta": se dopo il giro di modifiche il video non
-  si può pubblicare, rimborso dei 149 € (proposta, decide il CEO).
-
-Ogni settimana: campioni, risposte, Prove, minuti umani a video, abbonamenti.
-
-## 5. Tre video demo da fare CON il prodotto
-
-1. **"Un modello, tre clienti"** (9:16, 3 × 15 s): `npm run esempi:marche`
-   (Forno Bianchi, Prenotalo, Palestra Nova: stessi testi, tre look), dopo
-   aver tolto a mano i testi fissi e messo schermate vere. In fila nel post,
-   il moltiplicatore si capisce in 3 secondi. Marche dichiarate d'esempio.
-2. **"Dal link al video: il nostro sito"** (16:9, ~40 s): il tutorial di
-   Test di digitazione fatto dalla squadra (`docs/produzione/test-digitazione/
-   tutorial.json`, catture vere, cursore che clicca). "Il primo cliente siamo noi".
-3. **"Rivendi un video in 4 clic"** (16:9, ≤ 60 s, tutorial d'uso): catture
-   dell'editor, *Generatore rapido* → *Marche* → *Applica* → *Esporta*.
-   Mostra che il video si ritocca e cambia formato da un menu.
-
-## 6. Richieste
-
-- **CEO**: nome, sconto fondatori, rimborso Prova; extra voce fuori listino.
-- **Legale**: email a freddo B2B, WhatsApp a numeri aziendali, campione sul
-  sito dell'agenzia, privacy del modulo d'ordine.
-- **Roadmap**: per il marketing la priorità 2 viene prima: senza, ogni
-  campione richiede ritocchi a mano.
+- **CEO**: nome; listino rivenditore per agenzie di traduzione.
+- **Legale**: regola email UK (società / ditte individuali, opt-out),
+  termini e piè di pagina in inglese, clausola "approvazione per lingua".
+- **QA**: elenco finale delle lingue collaudate prima di pubblicarle.
+- **Roadmap**: priorità 2 prima di ogni campione, in ogni lingua.

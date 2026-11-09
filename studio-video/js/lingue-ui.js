@@ -123,7 +123,7 @@
       "Marca del cliente": "Client brand",
       "Marca: {nome}": "Brand: {nome}",
       "Marche": "Brands",
-      "Modello per tante marche? Nei testi scrivi {nome} {slogan} {invito} {sito} {vantaggio1}… (o {vantaggi} su una riga dei punti): applicando una marca diventano i suoi testi.": "Template for many brands? In the text, write {nome} {slogan} {invito} {sito} {vantaggio1}… (or {vantaggi} on one line of the points): when you apply a brand, they become its copy.",
+      "Modello per tante marche? Nei testi scrivi {nome} {slogan} {invito} {sito} {vantaggio1}… (o {vantaggi} su una riga dei punti): applicando una marca diventano i suoi testi.": "Template for many brands? Write {nome} {slogan} {invito} {sito} {vantaggio1}… in the text (or {vantaggi} as one line of the points): applying a brand fills in its own copy.",
       "Modifica": "Edit",
       "Mostra": "Show",
       "Mostra altre": "Show more",
@@ -162,7 +162,7 @@
       "Pochi dati, video già montato. Poi lo ritocchi pezzo per pezzo.": "Enter a few details, get a ready-made video. Then touch it up piece by piece.",
       "Pop — colori pieni, contorni neri, ombre nette": "Pop — solid colors, black outlines, hard shadows",
       "Posizione nel video": "Position in the video",
-      "Presentazione del sito (~30 s)": "Website presentation (~30 s)",
+      "Presentazione del sito (~30 s)": "Website tour (~30 s)",
       "Prima del numero": "Before the number",
       "Progetto e scene": "Project and scenes",
       "Proprietà della scena": "Scene properties",
@@ -255,6 +255,10 @@
       "Zoom che segue il cursore": "Zoom follows the cursor",
       "aria-label": "aria-label",
       "mai usata": "never used",
+      "{n} video fatto": "{n} video made",
+      "{n} video fatti": "{n} videos made",
+      "Annulla l'ultima modifica": "Undo last change",
+      "Ripeti l'ultima modifica annullata": "Redo last undone change",
       "npm run render": "npm run render",
       "prenotalo.it": "prenotalo.it",
       "ritocchi su {n} tipi di scena": "touch-ups on {n} scene types",
@@ -284,9 +288,6 @@
       "Stelle": "Stars",
       // libreria.js ritraduce la riga della scheda marca già tradotta (el "small" senza crudo):
       // finché non si corregge, la frase inglese deve tradursi in sé stessa.
-      "never used": "never used",
-      "used today": "used today",
-      "used yesterday": "used yesterday",
     },
   };
 })(typeof window !== "undefined" ? window : globalThis);

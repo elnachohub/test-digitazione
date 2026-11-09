@@ -1,6 +1,7 @@
 {
   "versione": 1,
   "nome": "Prenotalo",
+  "lingua": "it",
   "formato": "16:9",
   "tema": "acido",
   "accento": "",
@@ -25,7 +26,7 @@
     {
       "tipo": "tutorial",
       "durata": 9,
-      "titolo": "Prenotalo, passo per passo",
+      "titolo": "Prenotalo, passo dopo passo",
       "immagine": "",
       "zoom": true,
       "url": "https://prenotalo.example",

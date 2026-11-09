@@ -65,8 +65,15 @@ if (totale < limiti[0]) avvisi.push(`durata ${totale.toFixed(1)} s: troppo corta
 if (scene.length && scene[scene.length - 1].tipo !== "cta") avvisi.push("l'ultima scena non è un invito all'azione (cta)");
 if (scene[0] && scene[0].durata > 4) avvisi.push(`apertura di ${scene[0].durata} s: sui social il gancio deve arrivare entro 3 s`);
 
+// Parole che promettono qualcosa: vanno dimostrate (e una traduzione non deve aggiungerle).
+const PROMESSE = /\b(gratis|gratuit[oaie]|garantit[oaie]|garanzia|il migliore|la migliore|n\.?\s?1|numero uno|free|guarantee[ds]?|best|no\.?\s?1|number one|kostenlos|gratis|garantiert|beste[rn]?|gratuit[e]?|garanti[e]?|meilleur[e]?|gratuit[oa]|garantizad[oa]|mejor|grátis|garantid[oa]|melhor|darmowy|gwarantowan[ya]|najlepsz[ya]|gratis|gegarandeerd|beste)\b/iu;
+const promesse = [];
 const resti = new Set();
-const cercaSegnaposto = (t) => String(t || "").replace(/\{(\w+)\}/g, (x, k) => resti.add(k));
+const cercaSegnaposto = (t) => {
+  const m = PROMESSE.exec(String(t || ""));
+  if (m) promesse.push(`"${m[0]}" in: ${String(t).slice(0, 60)}`);
+  return String(t || "").replace(/\{(\w+)\}/g, (x, k) => resti.add(k));
+};
 
 scene.forEach((sc, i) => {
   const n = `scena ${i + 1} (${sc.tipo})`;
@@ -122,6 +129,8 @@ scene.forEach((sc, i) => {
 });
 if (resti.size && !valore("--marca")) avvisi.push(`segnaposto da riempire con una marca: ${[...resti].map((k) => `{${k}}`).join(" ")} (usa --marca)`);
 else if (resti.size) errori.push(`segnaposto sconosciuti: ${[...resti].map((k) => `{${k}}`).join(" ")}`);
+
+promesse.forEach((x) => avvisi.push(`affermazione da dimostrare (il sito del cliente deve dirlo, la traduzione non deve aggiungerla): ${x}`));
 
 console.log(`${path.basename(file)} · ${p.formato} · ${scene.length} scene · ${totale.toFixed(1)} s · ${piattaforma}`);
 errori.forEach((e) => console.log(`  ✖ ${e}`));

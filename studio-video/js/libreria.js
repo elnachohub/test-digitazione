@@ -199,7 +199,7 @@
       el("div", { classe: "info-marca" }, [
         el("strong", { crudo: true, testo: m.nome }),
         el("small", { crudo: true, testo: m.url.replace(/^https?:\/\//, "") || "—" }),
-        el("small", { classe: "tenue", testo: `${m.usi ? `${m.usi} video · ` : ""}${SV.t(quando(m.ultimoUso))}` }),
+        el("small", { classe: "tenue", crudo: true, testo: `${m.usi ? `${SV.t(m.usi === 1 ? "{n} video fatto" : "{n} video fatti", { n: m.usi })} · ` : ""}${SV.t(quando(m.ultimoUso))}` }),
       ]),
       el("div", { classe: "azioni-marca" }, [
         el("button", { type: "button", classe: "pulsante piccolo principale", onclick: () => nuovoVideo(m) }, "Nuovo video"),

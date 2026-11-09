@@ -1,6 +1,7 @@
 {
   "versione": 1,
   "nome": "Prenotalo",
+  "lingua": "it",
   "formato": "16:9",
   "tema": "carta",
   "accento": "",
@@ -45,7 +46,7 @@
     {
       "tipo": "numeri",
       "durata": 4.5,
-      "titolo": "I risultati parlano",
+      "titolo": "I risultati parlano chiaro",
       "valori": [
         {
           "valore": "[[numero vero]]",

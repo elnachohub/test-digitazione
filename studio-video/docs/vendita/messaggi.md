@@ -5,28 +5,37 @@ Scritti dal marketing. Regole per chi li manda:
   ritoccato a mano: niente "Novità", "In 3 parole?", "Provalo adesso" e
   niente telefono finto. Se il video non è all'altezza, non si manda.
 - Nessun numero o risultato promesso. Una sola domanda alla fine.
-- Prima di partire: parere del legale su email a freddo B2B e WhatsApp
-  (`docs/squadra/marketing.md`, sezione 6). Al primo "no grazie" si cancella
-  il contatto e non si scrive più.
+- **Regola del legale (`docs/squadra/legale.md` §2)**: in Italia email e
+  WhatsApp di vendita vogliono il consenso anche verso le aziende. Ordine:
+  LinkedIn (§2) → telefonata ("posso mandarle via email un video fatto sul
+  vostro sito?") → email (§1) **solo dopo il sì**, annotando data e nome.
+  Il WhatsApp (§3) non si usa a freddo. Al primo "no grazie" si cancella il
+  contatto e non si scrive più.
+- Domanda da fare sempre: "Quanti vostri clienti vendono o ospitano clienti
+  dall'estero?" Se sono 5 o più, si propone anche il pacchetto lingue.
 - Al posto di [NOME] il nome scelto dal CEO; [Tuo nome] = il titolare.
 
 ---
 
 ## 1. Email
 
-**Oggetto**: Ho fatto un video del sito di [Agenzia]
+(Solo dopo il sì al telefono o su LinkedIn.)
+
+**Oggetto**: Il video del sito di [Agenzia], come d'accordo
 
 Ciao [Nome],
 
-ho preso il sito di [Agenzia] e ne ho fatto un video verticale da 15 secondi,
-pronto per Reels e TikTok. Eccolo: [link al video]
+grazie per la telefonata. Come d'accordo, ecco il video verticale da 15
+secondi fatto dal sito di [Agenzia], pronto per Reels e TikTok: [link al video]
 
 Lo facciamo per le web agency: ci mandate il link del sito di un vostro
 cliente e ricevete i video nei 4 formati dei social, senza il nostro nome,
 da consegnare col vostro marchio. Si parte dal sito, quindi non serve girare
 nulla.
 
-Se volete provarlo su un cliente vero: 2 video in 48 ore a 149 €.
+Se volete provarlo su un cliente vero: 2 video in 48 ore a 149 €. Per i
+clienti che vendono all'estero, lo stesso video in altre lingue: +39 € a
+lingua, oppure 5 lingue a 199 €.
 
 Ti interessa che ne facciamo uno anche per un vostro cliente?
 
@@ -60,8 +69,8 @@ cliente?
 
 ## 3. WhatsApp
 
-Da usare solo come secondo contatto (dopo email o LinkedIn senza risposta)
-e solo se l'agenzia pubblica il numero per i contatti commerciali.
+**Sospeso dal legale**: non si manda a freddo. Solo a chi ha già detto sì
+a essere contattato su WhatsApp.
 
 Ciao [Nome], sono [Tuo nome] di [NOME]. Ti avevo scritto per email: ho
 fatto un video di 15 s dal sito di [Agenzia], te lo lascio qui: [link]

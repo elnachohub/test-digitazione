@@ -79,6 +79,9 @@ brano con i diritti, lo aggiungiamo.
   di Natale, un "siamo aperti anche ad agosto") e ne facciamo una versione
   per ogni cliente, ognuna con i suoi colori, logo e testi. È il lavoro
   per cui il nostro sistema è nato.
+- **Un video, le lingue dei clienti del tuo cliente.** La cantina, l'hotel,
+  il mobilificio che vendono all'estero: stesso video in inglese, tedesco,
+  francese, con numeri nel formato del paese. +39 € a lingua.
 - **Il kit di ogni cliente resta salvato** da noi (negli abbonamenti): il
   video del mese dopo parte già con il suo look.
 - **Margine tuo.** Con il pacchetto Agenzia 10 un video ti costa 69 €.
@@ -116,8 +119,14 @@ scritto. Mai prima.]
 | Senza nostro marchio | sì | sì | sì |
 | Consegna | 48 ore | 72 ore | 48 ore, con priorità |
 | Modifiche | 1 giro | 1 giro a video | 1 giro a video |
-| Kit dei clienti salvati | — | [proposta: sì, decide il CEO] | sì |
-| Campagne su tutti i clienti in una volta | — | — | incluse [da definire col CEO: quante l'anno] |
+| Kit dei clienti salvati | — | sì | sì |
+| Campagne su tutti i clienti in una volta | — | — | 4 l'anno |
+
+**Lingue**: ogni lingua in più **+39 €** a video (4 formati, testi adattati
+e non tradotti parola per parola, durate ricalcolate, 1 giro di modifiche).
+**Pacchetto Export: 1 video in 5 lingue, 199 €.** Revisione di un
+traduttore madrelingua (inglese, tedesco, francese, spagnolo): +29 € a lingua
+[solo quando c'è il partner].
 
 **Extra**: tutorial d'uso fino a 60 s +79 € · giro di modifiche in più 29 €.
 [Voce narrante: in listino solo quando esiste.]
@@ -125,8 +134,8 @@ scritto. Mai prima.]
 Contratto mensile, disdetta con 30 giorni di preavviso. Nessun vincolo
 annuale. La Prova si scala dal primo mese se ti abboni entro 30 giorni.
 
-**Offerta agenzie fondatrici** — per le prime 10 agenzie: [sconto e durata
-da decidere col CEO], in cambio del permesso di citarvi come clienti.
+**Offerta agenzie fondatrici** — per le prime 10 agenzie: Agenzia 10 a −20%
+per 12 mesi, in cambio del permesso di citarvi come clienti.
 
 [Prezzi del software in abbonamento (fase 2): non in pagina. Al loro posto:
 "Stiamo preparando il software per farli da soli. Lista d'attesa: [modulo]".]
@@ -155,7 +164,15 @@ Oggi no: i video sono pensati per essere visti senza audio. Se hai un brano
 di cui hai i diritti, lo inseriamo. Voce e musica sono in preparazione.
 
 **In che lingua sono i video?**
-In italiano. [Altre lingue: da decidere.]
+In italiano e, a richiesta, in inglese, tedesco, francese, spagnolo,
+portoghese e olandese [solo le lingue già provate dalla QA]. Stesse immagini,
+stesso stile, testi adattati al mercato. Non inventiamo nulla in traduzione:
+nessun numero, "gratis" o "il migliore" che non ci sia già nell'originale.
+
+**Chi controlla la traduzione?**
+La prepara la nostra squadra (IA + controlli). L'approvazione di ogni lingua
+spetta a te o al tuo cliente (spesso il suo importatore la legge). Se vuoi
+la nostra garanzia, aggiungi la revisione madrelingua.
 
 **Posso modificare il video da solo dopo?**
 Ogni consegna include un giro di modifiche fatto da noi. [Consegna anche del
@@ -192,8 +209,7 @@ d'archivio, riprese o avatar parlanti, quegli strumenti sono più adatti.
 
 **Testo**: Mandaci il link di un sito. In 48 ore hai due video nei 4
 formati, senza il nostro nome, e un giro di modifiche incluso.
-[Se il CEO approva il rimborso della Prova: "Se non si possono pubblicare,
-ti restituiamo i 149 €."]
+Se per un nostro errore non si possono pubblicare, ti restituiamo i 149 €.
 
 **Pulsante**: Prova con un sito — 149 €
 **Secondo pulsante**: Fammi prima un video sul sito della mia agenzia

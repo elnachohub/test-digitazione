@@ -1,6 +1,7 @@
 {
   "versione": 1,
   "nome": "Prenotalo",
+  "lingua": "it",
   "formato": "9:16",
   "tema": "anguria",
   "accento": "",
@@ -18,7 +19,7 @@
     {
       "tipo": "titolo",
       "durata": 3,
-      "etichetta": "Novità",
+      "etichetta": "",
       "titolo": "Prenotazioni online senza telefonate",
       "sottotitolo": "Prenotalo"
     },
