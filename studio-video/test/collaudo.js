@@ -68,7 +68,13 @@ async function prova(nome, fn, { bug = false } = {}) {
 
 // Apre l'editor in un contesto nuovo (IndexedDB vuoto) e raccoglie gli errori.
 async function apriEditor(browser, base, opzioni = {}) {
-  const contesto = await browser.newContext(Object.assign({ viewport: { width: 1440, height: 900 }, acceptDownloads: true }, opzioni));
+  const { linguaUI, ...altre } = opzioni;
+  const contesto = await browser.newContext(Object.assign({ viewport: { width: 1440, height: 900 }, acceptDownloads: true }, altre));
+  // il collaudo usa l'interfaccia in italiano (le frasi cercate sono quelle italiane);
+  // l'inglese ha il suo controllo in test/stringhe-ui.js
+  await contesto.addInitScript((l) => {
+    if (!localStorage.getItem("studio-video-lingua")) localStorage.setItem("studio-video-lingua", l);
+  }, opzioni.linguaUI || "it");
   const pagina = await contesto.newPage();
   const errori = [];
   const finestre = [];

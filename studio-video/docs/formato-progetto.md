@@ -9,6 +9,7 @@ codice cambia, va aggiornato.
 ```json
 {
   "nome": "Test di digitazione — promo",
+  "lingua": "it",
   "formato": "9:16",
   "tema": "limone",
   "accento": "",
@@ -24,6 +25,7 @@ codice cambia, va aggiornato.
 
 | Campo | Valori |
 |---|---|
+| `lingua` | lingua del video: `it` `en` `es` `fr` `de` `pt` `nl` `pl`. Decide il formato dei numeri (1.200 / 1,200 / 1 200), le maiuscole e i testi delle scene nuove. Non traduce i testi già scritti: per quello c'è `render/testi.js` |
 | `formato` | `16:9` (YouTube, sito), `9:16` (Reels, TikTok, Shorts), `1:1`, `4:5` (feed) |
 | `tema` | `limone` `cobalto` `anguria` (pop) · `carta` `inchiostro` (editoriale) · `acido` `laser` (griglia) · `tramonto` `oceano` (sfumato) |
 | `accento` | colore `#rrggbb` che sostituisce quello del tema; `""` = del tema |
@@ -92,6 +94,12 @@ diventa tutti i vantaggi della marca. Si riempiono con `--marca marche.json`.
   in basso (lì ci sono le icone del social). Usa `regola.*.dy` per spostare.
 - **Chiudi sempre con una `cta`** e il sito leggibile.
 - **Niente numeri o recensioni inventati**: solo dati che il cliente può dimostrare.
+  I modelli mettono segnaposto `[[...]]`: `verifica.js` e `render.js` si
+  fermano finché restano (`--bozza` solo per prove interne).
+- **Numeri**: scrivi il valore puro (`1200`, `4.9`): il motore lo formatta
+  secondo la lingua del video. "24/7" o "10k" restano come scritti.
+- **Altre lingue**: il tedesco è ~30% più lungo dell'inglese, il francese
+  ~20%: accorcia le idee, non i caratteri. Verifica sempre i provini.
 
 ## Attrezzi
 
@@ -99,5 +107,7 @@ diventa tutti i vantaggi della marca. Si riempiono con `--marca marche.json`.
 node render/cattura-sito.js https://sito.it --uscita docs/produzione/<cliente>/sito
 node render/verifica.js progetto.json [--marca marche.json]
 node render/fotogrammi.js progetto.json [--formato 9:16] [--uscita cartella]   # foglio provini
+node render/testi.js estrai progetto.json --uscita testi.json                  # foglio dei testi da tradurre
+node render/testi.js applica progetto.json testi-en.json --lingua en --uscita progetto-en.json
 node render/render.js progetto.json --formati 9:16,16:9 --uscita video
 ```

@@ -50,6 +50,7 @@
       animazione: String(x.animazione || "auto"),
       transizione: String(x.transizione || "dissolvenza"),
       formato: String(x.formato || "9:16"),
+      lingua: String(x.lingua || "it"),
       scene,
       anteprima: String(x.anteprima || ""),
       creata: x.creata || ora,
@@ -66,7 +67,7 @@
     m.nome = marchio.nome || m.nome || progetto.nome;
     m.url = marchio.url || m.url || "";
     m.logo = marchio.logo || m.logo || "";
-    for (const k of ["tema", "accento", "carattere", "animazione", "transizione", "formato"]) m[k] = progetto[k] || "";
+    for (const k of ["tema", "accento", "carattere", "animazione", "transizione", "formato", "lingua"]) m[k] = progetto[k] || "";
     const scene = {};
     for (const sc of progetto.scene || []) {
       if (scene[sc.tipo]) continue;
@@ -142,7 +143,7 @@
   // Dati per il generatore rapido a partire dalla marca.
   function datiDaMarca(marca) {
     const m = normalizzaMarca(marca);
-    return { nome: m.nome, url: m.url, logo: m.logo, slogan: m.slogan, vantaggi: m.vantaggi, invito: m.invito, tema: m.tema, carattere: m.carattere, formato: m.formato };
+    return { nome: m.nome, url: m.url, logo: m.logo, slogan: m.slogan, vantaggi: m.vantaggi, invito: m.invito, tema: m.tema, carattere: m.carattere, formato: m.formato, lingua: m.lingua };
   }
 
   // Riassunto leggibile del look (per schede e conferme).
@@ -150,7 +151,9 @@
     const m = normalizzaMarca(marca);
     const tema = (SV.TEMI && SV.TEMI[m.tema] && SV.TEMI[m.tema].nome) || m.tema;
     const ritocchi = Object.values(m.scene).filter((s) => s.regola).length;
-    return `${tema}${ritocchi ? ` · ritocchi su ${ritocchi} tip${ritocchi === 1 ? "o" : "i"} di scena` : ""}`;
+    const t = SV.t || ((x, v) => x.replace(/\{(\w+)\}/g, (a, k) => v[k]));
+    const lingua = SV.LINGUE && SV.LINGUE[m.lingua] ? ` · ${SV.LINGUE[m.lingua].nome}` : "";
+    return `${t(tema)}${lingua}${ritocchi ? ` · ${t(ritocchi === 1 ? "ritocchi su {n} tipo di scena" : "ritocchi su {n} tipi di scena", { n: ritocchi })}` : ""}`;
   }
 
   function testoRicerca(m) {

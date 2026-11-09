@@ -12,7 +12,7 @@ Per ogni video in `docs/produzione/<cliente>/`:
   guardali davvero;
 - controlla: gancio nei primi 3 s, testi leggibili su telefono, niente
   tagliato o sovrapposto, zona sicura 9:16, refusi e italiano, coerenza con
-  la marca e con il brief, invito all'azione chiaro, nessuna promessa
+  la marca e con il brief, lingua del video corretta (campo `lingua`, numeri nel formato giusto, nessuna frase rimasta nella lingua di partenza), invito all'azione chiaro, nessuna promessa
   non dimostrabile, durate e codec corretti.
 
 Scrivi `docs/produzione/<cliente>/revisione.md` con esito **APPROVATO** o

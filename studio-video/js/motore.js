@@ -52,16 +52,29 @@
   // Ogni carattere: famiglia dei titoli + famiglia del testo corrente.
   const CARATTERI = {
     auto: { nome: "Quello del tema" },
-    pesante: { nome: "Pesante (Archivo Black)", titoli: '"SV Archivo", "Arial Black", sans-serif', peso: 400, testo: '"SV Inter", system-ui, sans-serif' },
-    manifesto: { nome: "Manifesto (Anton, maiuscolo)", titoli: '"SV Anton", Impact, sans-serif', peso: 400, maiuscolo: true, testo: '"SV Inter", system-ui, sans-serif' },
-    grottesco: { nome: "Grottesco (Bricolage)", titoli: '"SV Bricolage", system-ui, sans-serif', peso: 800, testo: '"SV Bricolage", system-ui, sans-serif' },
-    editoriale: { nome: "Editoriale (Fraunces)", titoli: '"SV Fraunces", Georgia, serif', peso: 800, testo: '"SV Fraunces", Georgia, serif' },
-    tecnico: { nome: "Tecnico (Space Grotesk)", titoli: '"SV Space", monospace', peso: 700, testo: '"SV Space", monospace' },
-    largo: { nome: "Largo (Syne)", titoli: '"SV Syne", system-ui, sans-serif', peso: 800, testo: '"SV Inter", system-ui, sans-serif' },
+    pesante: { nome: "Pesante (Archivo Black)", titoli: '"SV Archivo", "SV Inter", "Arial Black", sans-serif', peso: 400, testo: '"SV Inter", system-ui, sans-serif' },
+    manifesto: { nome: "Manifesto (Anton, maiuscolo)", titoli: '"SV Anton", "SV Inter", Impact, sans-serif', peso: 400, maiuscolo: true, testo: '"SV Inter", system-ui, sans-serif' },
+    grottesco: { nome: "Grottesco (Bricolage)", titoli: '"SV Bricolage", "SV Inter", system-ui, sans-serif', peso: 800, testo: '"SV Bricolage", "SV Inter", system-ui, sans-serif' },
+    editoriale: { nome: "Editoriale (Fraunces)", titoli: '"SV Fraunces", "SV Inter", Georgia, serif', peso: 800, testo: '"SV Fraunces", "SV Inter", Georgia, serif' },
+    tecnico: { nome: "Tecnico (Space Grotesk)", titoli: '"SV Space", "SV Inter", monospace', peso: 700, testo: '"SV Space", "SV Inter", monospace' },
+    largo: { nome: "Largo (Syne)", titoli: '"SV Syne", "SV Inter", system-ui, sans-serif', peso: 800, testo: '"SV Inter", system-ui, sans-serif' },
     pulito: { nome: "Pulito (Inter)", titoli: '"SV Inter", system-ui, sans-serif', peso: 800, testo: '"SV Inter", system-ui, sans-serif' },
   };
 
   const TRANSIZIONI = { dissolvenza: "Dissolvenza", scorrimento: "Scorrimento", zoom: "Zoom" };
+
+  // Lingue dei video: separatori dei numeri. La scrittura deve essere latina,
+  // cirillica o greca (destra-sinistra e ideogrammi non sono ancora supportati).
+  const LINGUE = {
+    it: { nome: "Italiano", migliaia: ".", decimali: "," },
+    en: { nome: "English", migliaia: ",", decimali: "." },
+    es: { nome: "Español", migliaia: ".", decimali: "," },
+    fr: { nome: "Français", migliaia: "\u202f", decimali: "," },
+    de: { nome: "Deutsch", migliaia: ".", decimali: "," },
+    pt: { nome: "Português", migliaia: ".", decimali: "," },
+    nl: { nome: "Nederlands", migliaia: ".", decimali: "," },
+    pl: { nome: "Polski", migliaia: "\u00a0", decimali: "," },
+  };
 
   const ANIMAZIONI = {
     auto: "Quella dello stile",
@@ -128,6 +141,7 @@
     tema.pesoTitoli = car.peso;
     tema.maiuscolo = Boolean(car.maiuscolo);
     tema.chiaro = luminanza(tema.sfondo1) > 0.5;
+    tema.lingua = LINGUE[progetto.lingua] ? progetto.lingua : "it";
     return tema;
   }
 
@@ -244,7 +258,7 @@
 
   // Trova la dimensione più grande che fa stare il testo nel riquadro.
   function adatta(ctx, tema, testo, larghezzaMax, altezzaMax, dimMax, dimMin, peso, interlinea = 1.15, corsivo = false) {
-    const t = peso === "T" && tema.maiuscolo ? String(testo || "").toUpperCase() : testo;
+    const t = peso === "T" && tema.maiuscolo ? String(testo || "").toLocaleUpperCase(tema.lingua) : testo;
     const inter = peso === "T" && tema.maiuscolo ? interlinea * 0.95 : interlinea;
     let dim = dimMax;
     for (;;) {
@@ -909,7 +923,7 @@
   function etichetta(ctx, s, testo, cx, y, h, p) {
     const { u, tema } = s;
     ctx.font = font(tema, h * 0.46, 800);
-    const t = String(testo).toUpperCase();
+    const t = String(testo).toLocaleUpperCase(tema.lingua);
     const tw = ctx.measureText(t).width + h * 1.1;
     ctx.save();
     ctx.translate(cx, y + h / 2 + (1 - p) * 2 * u);
@@ -985,7 +999,7 @@
     }
     if (etichettaH) {
       ctx.font = font(tema, etichettaH * 0.46, 800);
-      const tw = ctx.measureText(String(sc.etichetta).toUpperCase()).width + etichettaH * 1.1;
+      const tw = ctx.measureText(String(sc.etichetta).toLocaleUpperCase(tema.lingua)).width + etichettaH * 1.1;
       const yy = y;
       elemento(ctx, s, "etichetta", "Etichetta", { x: cx - tw / 2, y: yy, w: tw, h: etichettaH }, () => {
         const p = facile.molla(fase(t, 0.1, 0.6));
@@ -1388,27 +1402,32 @@
     conAlfa(ctx, fase(t, 0.2, 0.4), () => cursore(ctx, pc.x, pc.y, (s.verticale ? 5 : 4.2) * u, premuto));
   };
 
-  // "1.200" = milleduecento (italiano), "4,9" e "4.9" = quattro virgola nove,
-  // "24/7" o "10k" non sono numeri puri: si mostrano senza contatore.
-  function leggiNumero(valore) {
-    const t = String(valore == null ? "" : valore).trim();
-    if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(t)) {
-      const [intera, dec = ""] = t.split(",");
-      return { numero: Number(intera.replace(/\./g, "") + (dec ? `.${dec}` : "")), decimali: dec.length };
+  // Numeri secondo la lingua del video. In italiano "1.200" = milleduecento e
+  // "4,9" = quattro virgola nove; in inglese "1,200" e "4.9". Ciò che non è un
+  // numero puro ("24/7", "10k") si mostra così com'è, senza contatore.
+  const sicuroRx = (c) => c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  function leggiNumero(valore, L) {
+    const t = String(valore == null ? "" : valore).trim().replace(/[\u00a0\u202f ]/g, L.migliaia.trim() ? L.migliaia : " ");
+    const mig = L.migliaia.trim() ? sicuroRx(L.migliaia) : " ";
+    const dec = sicuroRx(L.decimali);
+    const conMigliaia = new RegExp(`^\\d{1,3}(${mig}\\d{3})+(${dec}\\d+)?$`);
+    if (conMigliaia.test(t)) {
+      const [intera, decimi = ""] = t.split(L.decimali);
+      return { numero: Number(intera.split(L.migliaia.trim() || " ").join("") + (decimi ? `.${decimi}` : "")), decimali: decimi.length };
     }
     if (/^\d+([.,]\d+)?$/.test(t)) {
-      const dec = (t.split(/[.,]/)[1] || "");
-      return { numero: Number(t.replace(",", ".")), decimali: dec.length };
+      const decimi = t.split(/[.,]/)[1] || "";
+      return { numero: Number(t.replace(",", ".")), decimali: decimi.length };
     }
     return { numero: NaN, decimali: 0 };
   }
 
-  // Formato italiano fatto a mano: punto per le migliaia anche a 4 cifre
-  // (lo standard it-IT scriverebbe "1200") e uguale su ogni computer.
-  function formattaNumero(v, decimali) {
+  // Formato fatto a mano (uguale su ogni computer): separatore delle migliaia
+  // anche a 4 cifre, come si scrivono le cifre nei video.
+  function formattaNumero(v, decimali, L) {
     const [intera, dec] = Math.abs(Number(v)).toFixed(decimali).split(".");
-    const conPunti = intera.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    return `${Number(v) < 0 ? "-" : ""}${conPunti}${dec ? `,${dec}` : ""}`;
+    const conSeparatori = intera.replace(/\B(?=(\d{3})+(?!\d))/g, L.migliaia);
+    return `${Number(v) < 0 ? "-" : ""}${conSeparatori}${dec ? `${L.decimali}${dec}` : ""}`;
   }
 
   SCENE.numeri = function (ctx, sc, s) {
@@ -1453,14 +1472,15 @@
         const inizio = 0.3 + i * 0.2;
         const p = facile.fuori(fase(t, inizio, 0.6));
         const conta = facile.fuori(fase(t, inizio + 0.1, 1.5));
-        const { numero, decimali } = leggiNumero(v.valore);
-        const mostra = isFinite(numero) ? formattaNumero(numero * conta, decimali) : String(v.valore);
+        const L = LINGUE[tema.lingua];
+        const { numero, decimali } = leggiNumero(v.valore, L);
+        const mostra = isFinite(numero) ? formattaNumero(numero * conta, decimali, L) : String(v.valore);
         conAlfa(ctx, p, () => {
           ctx.save();
           ctx.translate(0, (1 - p) * 5 * u);
           riquadro(ctx, s, x, yy, cw, ch, 2.4 * u);
           const testo = `${v.prefisso || ""}${mostra}${v.suffisso || ""}`;
-          const finale = `${v.prefisso || ""}${isFinite(numero) ? formattaNumero(numero, decimali) : v.valore}${v.suffisso || ""}`;
+          const finale = `${v.prefisso || ""}${isFinite(numero) ? formattaNumero(numero, decimali, L) : v.valore}${v.suffisso || ""}`;
           let dim = Math.min(ch * 0.42, 16 * u);
           ctx.font = font(tema, dim, "T");
           while (ctx.measureText(finale).width > cw * 0.84 && dim > 3 * u) {
@@ -1663,7 +1683,7 @@
       ctx.fillStyle = tema.testo;
       ctx.textBaseline = "alphabetic";
       ctx.textAlign = "left";
-      ctx.fillText(nome.toUpperCase(), m, m + 2.4 * u);
+      ctx.fillText(nome.toLocaleUpperCase(tema.lingua), m, m + 2.4 * u);
       ctx.textAlign = "right";
       ctx.fillText(`${String(indice + 1).padStart(2, "0")} / ${String(totale).padStart(2, "0")}`, W - m, m + 2.4 * u);
       return true;
@@ -1783,10 +1803,10 @@
   }
 
   Object.assign(SV, {
-    FORMATI, TEMI, STILI, CARATTERI, TRANSIZIONI, ANIMAZIONI, SCENE,
+    FORMATI, TEMI, STILI, CARATTERI, TRANSIZIONI, ANIMAZIONI, LINGUE, SCENE,
     temaDi, dimensioni, tempi, durataTotale, scenaA,
     sorgentiImmagini, caricaRisorse, caricaFont, disegna,
     geometriaTutorial, statoTutorial,
-    utili: { limita, fase, facile, rgba, testoSopra },
+    utili: { limita, fase, facile, rgba, testoSopra, leggiNumero, formattaNumero },
   });
 })(typeof window !== "undefined" ? window : globalThis);

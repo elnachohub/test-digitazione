@@ -38,6 +38,17 @@ nel browser, e un comando produce MP4 perfetti in serie.
 - **Stampa unione**: nei testi di un modello scrivi `{nome}`, `{slogan}`,
   `{invito}`, `{sito}`, `{vantaggio1}`… (o `{vantaggi}` su una riga dei punti)
   e ogni marca ci mette i suoi.
+- **Internazionale**:
+  - video in 8 lingue (`it en es fr de pt nl pl`): numeri formattati per
+    lingua (1.200 / 1,200 / 1 200), testi dei modelli già tradotti, caratteri
+    con gli accenti dell'Europa centrale e dell'Est, cirillico e greco;
+  - **moltiplicatore di lingue**: `render/testi.js` estrae i testi di un video
+    in un foglio, si traducono (a mano, con un traduttore o con l'agente
+    localizzatore) e si rimettono dentro: stesse immagini, stessi ritocchi,
+    durate allungate da sole se la traduzione è più lunga;
+  - interfaccia dell'editor in italiano e inglese (lingua scelta dal browser,
+    cambiabile in alto); si aggiungono lingue con un dizionario.
+  - Non ancora: lingue da destra a sinistra (arabo, ebraico) e ideogrammi.
 - **Esporta** dal browser (MP4 su Chrome/Edge, altrimenti WebM) oppure da riga
   di comando (MP4 H.264 + AAC, fotogramma per fotogramma, compatibile ovunque).
 - **Copertina PNG** dal fotogramma attuale (miniature YouTube, anteprime).
@@ -83,6 +94,15 @@ npm run render -- modello.json --marca marche.json --solo forno --tutti
 npm run esempi:marche                                         # demo: 3 clienti, 3 video
 ```
 
+**Un video × N lingue**:
+
+```bash
+node render/testi.js estrai promo.json --uscita testi-promo.json
+# traduci il campo "testo" in testi-promo-en.json, poi:
+node render/testi.js applica promo.json testi-promo-en.json --lingua en --uscita promo-en.json
+npm run render -- promo.json promo-en.json --formati 9:16
+```
+
 Nel JSON le immagini possono essere data URL (come le salva l'editor),
 indirizzi `https://` o percorsi di file relativi al JSON: così puoi generare
 decine di video da modelli scritti a mano o da uno script.
@@ -100,6 +120,7 @@ studio-video/
 │   ├── modelli.js      tipi di scena e generatori dei 3 modelli
 │   ├── marca.js        logica delle marche e stampa unione (browser + Node)
 │   ├── archivio.js     IndexedDB: progetto aperto + database marche (SV.marche)
+│   ├── interfaccia.js  lingua dell'interfaccia (SV.t) · lingue-ui.js: dizionari
 │   ├── editor.js       interfaccia
 │   └── libreria.js     finestra delle marche
 ├── render/

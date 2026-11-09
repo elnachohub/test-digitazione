@@ -123,7 +123,7 @@
       box.replaceChildren(
         el("div", { classe: "marca-collegata" }, [
           m.anteprima ? el("img", { src: m.anteprima, alt: "" }) : "",
-          el("div", {}, [el("small", { testo: "Marca collegata" }), el("strong", { testo: m.nome })]),
+          el("div", {}, [el("small", { testo: "Marca collegata" }), el("strong", { crudo: true, testo: m.nome })]),
         ]),
         el("div", { classe: "azioni-marca-attuale" }, [
           el("button", { type: "button", classe: "pulsante piccolo", title: "Salva nella marca il look e i ritocchi di questo progetto", onclick: () => aggiornaDaProgetto(m) }, "↻ Aggiorna marca"),
@@ -136,14 +136,14 @@
         el("p", { classe: "nota", testo: "Nessuna marca collegata. Sistema un video come piace al cliente, poi salvalo come marca: i prossimi nasceranno già così." }),
         el("div", { classe: "azioni-marca-attuale" }, [
           el("button", { type: "button", classe: "pulsante piccolo giallo", onclick: () => apriScheda(null, true) }, "★ Salva come marca"),
-          el("button", { type: "button", classe: "pulsante piccolo", onclick: () => apri() }, `Scegli (${cache.length})`),
+          el("button", { type: "button", classe: "pulsante piccolo", crudo: true, onclick: () => apri() }, SV.t("Scegli ({n})", { n: cache.length })),
         ]),
       );
     }
   }
 
   async function aggiornaDaProgetto(m) {
-    if (!confirm(`Aggiornare la marca "${m.nome}" con il look e i ritocchi di questo progetto?\nI prossimi video di questa marca nasceranno così.`)) return;
+    if (!confirm(SV.t("Aggiornare la marca \"{nome}\" con il look e i ritocchi di questo progetto?\nI prossimi video di questa marca nasceranno così.", { nome: m.nome }))) return;
     const testi = { slogan: m.slogan, vantaggi: m.vantaggi, invito: m.invito, note: m.note, creata: m.creata, usi: m.usi, ultimoUso: m.ultimoUso };
     await salva(Object.assign(SV.estraiMarca(ed().progetto(), m), testi));
     mostraStato();
@@ -169,7 +169,7 @@
     const elenco = SV.cercaMarche(cache, $("#cerca-marche").value, $("#ordine-marche").value);
     const p = ed().progetto();
     const totale = cache.length;
-    $("#conta-marche").textContent = totale === elenco.length ? `${totale} ${totale === 1 ? "marca" : "marche"}` : `${elenco.length} di ${totale}`;
+    $("#conta-marche").textContent = totale === elenco.length ? SV.t(totale === 1 ? "{n} marca" : "{n} marche", { n: totale }) : SV.t("{n} di {totale}", { n: elenco.length, totale });
     $("#esporta-marche").disabled = !totale;
     const griglia = $("#griglia-marche");
     if (!totale) {
@@ -188,18 +188,18 @@
   function quando(iso) {
     if (!iso) return "mai usata";
     const giorni = Math.floor((Date.now() - new Date(iso)) / 864e5);
-    return giorni <= 0 ? "usata oggi" : giorni === 1 ? "usata ieri" : `usata ${giorni} giorni fa`;
+    return giorni <= 0 ? "usata oggi" : giorni === 1 ? "usata ieri" : SV.t("usata {n} giorni fa", { n: giorni });
   }
 
   function scheda(m, attiva) {
     const el = ed().elemento;
-    const mini = (testo, titolo, fn) => el("button", { type: "button", classe: "mini", title: titolo, "aria-label": `${titolo}: ${m.nome}`, onclick: fn }, testo);
+    const mini = (testo, titolo, fn) => el("button", { type: "button", classe: "mini", crudo: true, title: SV.t(titolo), "aria-label": `${SV.t(titolo)}: ${m.nome}`, onclick: fn }, testo);
     return el("li", { classe: `scheda-marca${attiva ? " attiva" : ""}` }, [
-      el("div", { classe: "anteprima-marca" }, m.anteprima ? el("img", { src: m.anteprima, alt: "", loading: "lazy" }) : el("span", { testo: m.nome.slice(0, 2).toUpperCase() })),
+      el("div", { classe: "anteprima-marca" }, m.anteprima ? el("img", { src: m.anteprima, alt: "", loading: "lazy" }) : el("span", { crudo: true, testo: m.nome.slice(0, 2).toUpperCase() })),
       el("div", { classe: "info-marca" }, [
-        el("strong", { testo: m.nome }),
-        el("small", { testo: m.url.replace(/^https?:\/\//, "") || "—" }),
-        el("small", { classe: "tenue", testo: `${m.usi ? `${m.usi} video · ` : ""}${quando(m.ultimoUso)}` }),
+        el("strong", { crudo: true, testo: m.nome }),
+        el("small", { crudo: true, testo: m.url.replace(/^https?:\/\//, "") || "—" }),
+        el("small", { classe: "tenue", testo: `${m.usi ? `${m.usi} video · ` : ""}${SV.t(quando(m.ultimoUso))}` }),
       ]),
       el("div", { classe: "azioni-marca" }, [
         el("button", { type: "button", classe: "pulsante piccolo principale", onclick: () => nuovoVideo(m) }, "Nuovo video"),
@@ -232,7 +232,7 @@
   }
 
   async function elimina(m) {
-    if (!confirm(`Eliminare la marca "${m.nome}"?\nI video già fatti restano, ma non potrai più crearne di nuovi con questa marca.`)) return;
+    if (!confirm(SV.t("Eliminare la marca \"{nome}\"?\nI video già fatti restano, ma non potrai più crearne di nuovi con questa marca.", { nome: m.nome }))) return;
     await SV.marche.elimina(m.id);
     cache = cache.filter((x) => x.id !== m.id);
     aggiorna();
@@ -248,7 +248,7 @@
     try {
       marche = SV.leggiFileMarche(JSON.parse(await file.text()));
     } catch (e) {
-      alert("Questo file non contiene marche di Studio Video.");
+      alert(SV.t("Questo file non contiene marche di Studio Video."));
       return;
     }
     await tutte();
@@ -261,7 +261,7 @@
     }
     await SV.marche.salvaTante(marche);
     aggiorna();
-    alert(`${marche.length} marche importate (${nuove} nuove, ${marche.length - nuove} aggiornate).`);
+    alert(SV.t("{n} marche importate ({nuove} nuove, {aggiornate} aggiornate).", { n: marche.length, nuove, aggiornate: marche.length - nuove }));
   }
 
   // ------------------------------------------------- scheda della marca
@@ -283,8 +283,8 @@
     f.prendiLook.checked = daProgetto;
     logoScheda = base.logo || "";
     ed().campoImmagine($("#logo-marca"), logoScheda, (v) => (logoScheda = v), true);
-    $("#titolo-scheda-marca").textContent = m ? `Marca: ${m.nome}` : "Nuova marca";
-    $("#look-marca").textContent = m ? `Look salvato: ${SV.riassuntoLook(m)}` : `Look dal progetto: ${SV.riassuntoLook(base)}`;
+    $("#titolo-scheda-marca").textContent = m ? SV.t("Marca: {nome}", { nome: m.nome }) : SV.t("Nuova marca");
+    $("#look-marca").textContent = m ? SV.t("Look salvato: {look}", { look: SV.riassuntoLook(m) }) : SV.t("Look dal progetto: {look}", { look: SV.riassuntoLook(base) });
     $("#riga-prendi-look").hidden = !m;
     $("#scheda-marca").returnValue = "";
     $("#scheda-marca").showModal();
@@ -339,7 +339,7 @@
       if (f) importa(f);
     });
     $("#scheda-marca").addEventListener("close", () => {
-      if ($("#scheda-marca").returnValue === "salva") confermaScheda().catch((e) => alert(`Salvataggio non riuscito: ${e.message}`));
+      if ($("#scheda-marca").returnValue === "salva") confermaScheda().catch((e) => alert(SV.t("Salvataggio non riuscito: {errore}", { errore: e.message })));
     });
   }
 

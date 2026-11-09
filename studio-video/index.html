@@ -14,6 +14,7 @@
     <span class="adesivo">STUDIO</span><span class="parola">video</span>
   </div>
   <input id="nome-progetto" class="nome-progetto" type="text" aria-label="Nome del progetto" spellcheck="false">
+  <select id="lingua-ui" class="lingua-ui" aria-label="Lingua dell'interfaccia" title="Lingua dell'interfaccia"></select>
   <div class="storia">
     <button id="annulla" class="pulsante icona" type="button" title="Annulla (Ctrl+Z)" aria-label="Annulla">↶</button>
     <button id="ripeti" class="pulsante icona" type="button" title="Ripeti (Ctrl+Maiusc+Z)" aria-label="Ripeti">↷</button>
@@ -52,7 +53,10 @@
         <label class="campo">Animazione testo <select id="animazione"></select></label>
         <label class="campo">Transizione <select id="transizione"></select></label>
       </div>
-      <label class="campo">Formato <select id="formato"></select></label>
+      <div class="due">
+        <label class="campo">Formato <select id="formato"></select></label>
+        <label class="campo">Lingua del video <select id="lingua-video"></select></label>
+      </div>
     </section>
 
     <section class="gruppo">
@@ -128,8 +132,9 @@
     </label>
     <div class="due">
       <label class="campo">Testo del pulsante <input name="invito" type="text" placeholder="Es. Prova gratis"></label>
-      <label class="campo">Formato <select name="formato" id="gen-formato"></select></label>
+      <label class="campo">Lingua del video <select name="lingua" id="gen-lingua"></select></label>
     </div>
+    <label class="campo">Formato <select name="formato" id="gen-formato"></select></label>
     <div class="due">
       <label class="campo">Tema <select name="tema" id="gen-tema"></select></label>
       <label class="campo">Carattere <select name="carattere" id="gen-carattere"></select></label>
@@ -217,6 +222,8 @@
   </form>
 </dialog>
 
+<script src="js/lingue-ui.js"></script>
+<script src="js/interfaccia.js"></script>
 <script src="js/motore.js"></script>
 <script src="js/modelli.js"></script>
 <script src="js/marca.js"></script>

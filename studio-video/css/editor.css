@@ -87,6 +87,15 @@ code { background: var(--carta-2); padding: 1px 5px; border-radius: 4px; font-fa
 }
 .nome-progetto:hover, .nome-progetto:focus { border-color: var(--inchiostro); background: var(--foglio); outline: none; }
 .storia { display: flex; gap: 6px; }
+.lingua-ui {
+  border: var(--bordo);
+  border-radius: 999px;
+  background: var(--foglio);
+  padding: 5px 10px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
 .azioni { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
 
 .pulsante {

@@ -5,7 +5,17 @@ da vendere a chi gestisce siti e clienti. Leggi `README.md` per le funzioni.
 
 ## Regole tecniche
 
-- Tutto in italiano: nomi di variabili, funzioni, commenti, testi dell'interfaccia.
+- Codice e documenti interni in italiano: nomi, funzioni, commenti.
+- Il PRODOTTO è internazionale:
+  - interfaccia: le frasi scritte nel codice sono in italiano e passano da
+    `SV.t("…")` (o da `elemento()` nell'editor, che traduce da solo); i
+    dizionari sono in `js/lingue-ui.js`. Ogni frase nuova va tradotta:
+    `node test/stringhe-ui.js` fallisce se manca una traduzione. Lingue
+    dell'interfaccia = lingue in cui diamo assistenza (oggi it, en);
+  - video: campo `lingua` del progetto (8 lingue in `SV.LINGUE`), testi dei
+    modelli per lingua in `SV.TESTI` (`js/modelli.js`), numeri formattati
+    dal motore secondo la lingua. Scrittura latina, cirillica o greca;
+    destra-sinistra e ideogrammi non supportati.
 - Editor senza dipendenze né build: HTML + CSS + JavaScript puro nel browser.
 - `js/motore.js` è una funzione pura del tempo (stesso progetto + stesso t =
   stessa immagine). Anteprima, esportazione e MP4 usano lo stesso codice:
@@ -17,6 +27,8 @@ da vendere a chi gestisce siti e clienti. Leggi `README.md` per le funzioni.
   - `node --check js/*.js render/render.js`
   - `npm run esempi` (rigenera gli esempi senza errori)
   - `npm run esempi:marche` (3 MP4 da un modello × 3 marche)
+  - `node test/collaudo.js` (flussi principali, interfaccia in italiano)
+  - `node test/stringhe-ui.js` (nessuna frase dell'interfaccia senza traduzione)
   - aprire l'editor con `npm run avvia` e provarlo nel browser (Playwright va
     bene: `require('playwright')`), console senza errori.
 
@@ -32,12 +44,16 @@ tecnico in `docs/formato-progetto.md`, lavoro in `docs/produzione/<cliente>/`.
 | `sceneggiatore` | `copione.md` |
 | `art-director` | `<video>.json`, `provini/`, `regia-visiva.md` |
 | `montatore` | ritmo e formati, `video/*.mp4`, `montaggio.md` |
+| `localizzatore` | `<video>-<lingua>.json` dai fogli `testi-*.json`, `localizzazione.md` |
 | `revisore` | `revisione.md`: APPROVATO o DA RIFARE con note |
 
 Ordine fisso: regista → esploratore → sceneggiatore → art director →
 montatore → revisore (→ ritorno al ruolo indicato, massimo 2 giri).
+Più lingue: il video si chiude prima nella lingua principale del brief;
+poi il localizzatore fa le altre lingue, il montatore le rende e il
+revisore le approva una per una (madrelingua o revisione comprata dal cliente).
 Attrezzi: `render/cattura-sito.js`, `render/verifica.js`,
-`render/fotogrammi.js`, `render/render.js`. Gli MP4 non vanno nel repository.
+`render/fotogrammi.js`, `render/testi.js`, `render/render.js`. Gli MP4 non vanno nel repository.
 
 ## Squadra dell'azienda
 

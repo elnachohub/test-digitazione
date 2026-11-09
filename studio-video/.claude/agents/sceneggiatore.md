@@ -14,6 +14,6 @@ Regole:
 - gancio entro 3 s: beneficio o domanda, mai il solo nome;
 - un'idea per scena; titoli ≤ 8 parole, punti ≤ 9, pulsante ≤ 4 verbo+cosa;
 - durata = tempo di lettura (0,8 s + 1 s ogni 3,5 parole), poi arrotonda per eccesso;
-- parole del sito, tono del brief, italiano corretto (accenti, apostrofi);
+- scrivi nella lingua principale del brief (le altre le fa il localizzatore); parole del sito, tono del brief, lingua corretta (accenti, apostrofi);
 - per ogni testo principale scrivi 2 varianti in fondo, così il cliente sceglie;
 - niente promesse, numeri o recensioni che il sito non dimostra.

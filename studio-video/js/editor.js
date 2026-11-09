@@ -36,12 +36,14 @@
   const ROSA = "#ff3e7f";
 
   function progettoIniziale() {
+    const lingua = SV.LINGUE[SV.linguaUI] ? SV.linguaUI : "en";
+    const T = SV.testiModello(lingua);
     return SV.MODELLI.presentazione.crea({
-      nome: "Il mio sito",
-      slogan: "La promessa del tuo sito in una frase",
-      url: "https://iltuosito.it",
-      vantaggi: "Primo vantaggio concreto\nSecondo vantaggio concreto\nTerzo vantaggio concreto",
-      invito: "Visita il sito",
+      nome: t("Il mio sito"),
+      slogan: T.sottotitolo,
+      url: "https://example.com",
+      vantaggi: T.punti.join("\n"),
+      lingua,
       tema: "limone",
     });
   }
@@ -96,16 +98,20 @@
 
   // ------------------------------------------------------------- utilità
 
+  const t = SV.t;
+  const DA_TRADURRE = new Set(["title", "aria-label", "placeholder", "label"]);
   function elemento(tag, attributi = {}, figli = []) {
     const e = document.createElement(tag);
     for (const [k, v] of Object.entries(attributi)) {
-      if (k === "testo") e.textContent = v;
+      if (k === "crudo") continue;
+      if (k === "testo") e.textContent = attributi.crudo ? v : t(v);
+      else if (DA_TRADURRE.has(k) && typeof v === "string") e.setAttribute(k, attributi.crudo ? v : t(v));
       else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
       else if (k === "classe") e.className = v;
       else if (v === true) e.setAttribute(k, "");
       else if (v !== false && v != null) e.setAttribute(k, v);
     }
-    for (const f of [].concat(figli)) if (f) e.append(f);
+    for (const f of [].concat(figli)) if (f) e.append(typeof f === "string" && !attributi.crudo ? t(f) : f);
     return e;
   }
 
@@ -322,6 +328,12 @@
     });
   }
 
+  // Nomi degli elementi dal motore ("Titolo", "Punto 3"): tradotti, numero a parte.
+  function nomeElemento(nome) {
+    const m = /^(.*\D) (\d+)$/.exec(nome);
+    return m ? t(`${m[1]} {n}`, { n: m[2] }) : t(nome);
+  }
+
   function pixelSchermo() {
     return tela.width / Math.max(1, tela.getBoundingClientRect().width);
   }
@@ -357,14 +369,15 @@
       ctx.strokeRect(x, y, w, h);
       // etichetta col nome
       ctx.font = `700 ${Math.round(12 * p)}px "SV Bricolage", system-ui, sans-serif`;
-      const tw = ctx.measureText(sel.nome).width + 14 * p;
+      const nomeSel = nomeElemento(sel.nome);
+      const tw = ctx.measureText(nomeSel).width + 14 * p;
       const ey = y - 22 * p < 0 ? y + h + 2 * p : y - 22 * p;
       ctx.fillStyle = ROSA;
       ctx.fillRect(x - 1.25 * p, ey, tw, 20 * p);
       ctx.fillStyle = "#fff";
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
-      ctx.fillText(sel.nome, x + 6 * p, ey + 10.5 * p);
+      ctx.fillText(nomeSel, x + 6 * p, ey + 10.5 * p);
       // maniglia per ingrandire
       const mn = maniglia({ x, y, w, h });
       ctx.fillStyle = "#fff";
@@ -417,7 +430,7 @@
     inizioReale = performance.now();
     inizioT = stato.t;
     $("#riproduci").textContent = "❚❚";
-    $("#riproduci").setAttribute("aria-label", "Pausa");
+    $("#riproduci").setAttribute("aria-label", t("Pausa"));
     if (stato.progetto.musica) {
       audio.volume = Number(stato.progetto.volume ?? 0.8);
       audio.currentTime = stato.t;
@@ -430,7 +443,7 @@
     stato.inRiproduzione = false;
     audio.pause();
     $("#riproduci").textContent = "▶";
-    $("#riproduci").setAttribute("aria-label", "Riproduci");
+    $("#riproduci").setAttribute("aria-label", t("Riproduci"));
     ridisegna();
   }
 
@@ -473,6 +486,17 @@
     if (valore) select.value = valore;
   }
 
+  // Lingue con il nome scritto nella lingua stessa (non si traducono).
+  function riempiLingue(select, valore) {
+    select.replaceChildren(...Object.entries(SV.LINGUE).map(([k, l]) => {
+      const o = document.createElement("option");
+      o.value = k;
+      o.textContent = l.nome;
+      return o;
+    }));
+    select.value = valore;
+  }
+
   function mostraProgetto() {
     const p = stato.progetto;
     $("#nome-progetto").value = p.nome || "";
@@ -481,6 +505,7 @@
     riempiScelta($("#carattere"), SV.CARATTERI, p.carattere || "auto");
     riempiScelta($("#transizione"), SV.TRANSIZIONI, p.transizione);
     riempiScelta($("#animazione"), SV.ANIMAZIONI, p.animazione || "auto");
+    riempiLingue($("#lingua-video"), p.lingua || "it");
     $("#accento").value = p.accento || SV.TEMI[p.tema]?.accento || "#ff3e7f";
     $("#marchio-nome").value = p.marchio?.nome || "";
     $("#marchio-url").value = p.marchio?.url || "";
@@ -492,7 +517,7 @@
 
   function mostraMusica() {
     const p = stato.progetto;
-    $("#musica-nome").textContent = p.musica ? p.musicaNome || "Musica caricata" : "Nessuna musica";
+    $("#musica-nome").textContent = p.musica ? p.musicaNome || t("Musica caricata") : t("Nessuna musica");
     $("#musica-togli").hidden = !p.musica;
     audio.src = p.musica || "";
   }
@@ -529,10 +554,10 @@
       return elemento("li", { classe: `tipo-${sc.tipo}${i === stato.selezionata ? " selezionata" : ""}`, onclick: () => seleziona(i) }, [
         elemento("span", { classe: "icona-scena", testo: tipo.icona }),
         elemento("span", { classe: "testo-scena" }, [
-          elemento("strong", { testo: `${i + 1}. ${tipo.nome}` }),
-          elemento("small", { classe: "riassunto", testo: riassunto(sc) }),
+          elemento("strong", { crudo: true, testo: `${i + 1}. ${t(tipo.nome)}` }),
+          elemento("small", { classe: "riassunto", crudo: true, testo: riassunto(sc) }),
         ]),
-        elemento("span", { classe: "durata-scena", testo: `${Number(sc.durata).toFixed(1).replace(".0", "")}s` }),
+        elemento("span", { classe: "durata-scena", crudo: true, testo: `${Number(sc.durata).toFixed(1).replace(".0", "")}s` }),
         elemento("span", { classe: "azioni-scena" }, [
           azione("↑", "Sposta su", () => sposta(i, -1), i === 0),
           azione("↓", "Sposta giù", () => sposta(i, 1), i === scene.length - 1),
@@ -564,7 +589,8 @@
         type: "button",
         classe: `blocco tipo-${v.scena.tipo}${v.indice === stato.selezionata ? " selezionata" : ""}`,
         style: `flex-grow:${v.durata / tot}`,
-        title: `${SV.TIPI[v.scena.tipo]?.nome || v.scena.tipo} · ${v.durata} s`,
+        crudo: true,
+        title: `${t(SV.TIPI[v.scena.tipo]?.nome || v.scena.tipo)} · ${v.durata} s`,
         onclick: () => seleziona(v.indice),
       }, elemento("span", { testo: SV.TIPI[v.scena.tipo]?.icona || "" }))),
       elemento("div", { id: "testina", classe: "testina" }),
@@ -615,7 +641,7 @@
 
   function aggiungi(tipo) {
     const i = stato.selezionata + 1;
-    modifica(() => stato.progetto.scene.splice(i, 0, SV.TIPI[tipo].vuota()), { struttura: true });
+    modifica(() => stato.progetto.scene.splice(i, 0, SV.TIPI[tipo].vuota(stato.progetto.lingua)), { struttura: true });
     seleziona(i);
   }
 
@@ -660,7 +686,7 @@
     const scala = Math.round((Number(r.scala) || 1) * 100);
     const campi = [
       elemento("div", { classe: "testa-elemento" }, [
-        elemento("strong", { testo: el.nome }),
+        elemento("strong", { crudo: true, testo: nomeElemento(el.nome) }),
         elemento("button", { type: "button", classe: "mini", title: "Deseleziona", "aria-label": "Deseleziona", onclick: () => selezionaElemento(null) }, "✕"),
       ]),
       elemento("label", { classe: "campo" }, [
@@ -686,7 +712,7 @@
             oninput: (e) => modifica(() => (regola(el.id).colore = e.target.value), { chiave: `colore-${el.id}` }),
           }),
           ...[...new Set([tema.testo, tema.accento, tema.tenue, "#ffffff", "#111111"].map((c) => c.toLowerCase()))].map((c) => elemento("button", {
-            type: "button", classe: "campione", style: `background:${c}`, title: c, "aria-label": `Usa ${c}`,
+            type: "button", classe: "campione", style: `background:${c}`, crudo: true, title: c, "aria-label": t("Usa {colore}", { colore: c }),
             onclick: () => {
               modifica(() => (regola(el.id).colore = c));
               mostraPannelloElemento();
@@ -724,9 +750,10 @@
     if (firma === firmaElementi) return;
     firmaElementi = firma;
     lista.replaceChildren(...stato.elementi.map((e) => elemento("li", { classe: `${e.id === stato.elemento ? "attivo" : ""}${e.nascosto ? " spento" : ""}` }, [
-      elemento("button", { type: "button", classe: "nome-elemento", onclick: () => !e.nascosto && selezionaElemento(e.id), disabled: e.nascosto }, e.nome),
+      elemento("button", { type: "button", classe: "nome-elemento", crudo: true, onclick: () => !e.nascosto && selezionaElemento(e.id), disabled: e.nascosto }, nomeElemento(e.nome)),
       elemento("button", {
-        type: "button", classe: "mini", title: e.nascosto ? "Mostra" : "Nascondi", "aria-label": e.nascosto ? `Mostra ${e.nome}` : `Nascondi ${e.nome}`,
+        type: "button", classe: "mini", crudo: true, title: t(e.nascosto ? "Mostra" : "Nascondi"),
+        "aria-label": t(e.nascosto ? "Mostra {nome}" : "Nascondi {nome}", { nome: nomeElemento(e.nome) }),
         onclick: () => nascondi(e.id, !e.nascosto),
       }, e.nascosto ? "◌" : "◉"),
     ])));
@@ -756,7 +783,7 @@
           alCambio(nuovo);
           disegnaCampo(nuovo);
         } catch (e) {
-          alert("Immagine non leggibile: prova con PNG o JPG.");
+          alert(t("Immagine non leggibile: prova con PNG o JPG."));
         }
       };
       input.addEventListener("change", () => carica(input.files[0]));
@@ -778,7 +805,7 @@
       box.replaceChildren();
       return;
     }
-    $("#titolo-proprieta").textContent = `${stato.selezionata + 1}. ${SV.TIPI[sc.tipo]?.nome || sc.tipo}`;
+    $("#titolo-proprieta").textContent = `${stato.selezionata + 1}. ${t(SV.TIPI[sc.tipo]?.nome || sc.tipo)}`;
     const campi = [
       elemento("label", { classe: "campo" }, [
         "Durata (secondi)",
@@ -873,11 +900,16 @@
     }
   }
 
+  // "Passo 3" nella lingua del video
+  function nomePasso(n) {
+    return SV.testiModello(stato.progetto.lingua).passo.replace("{n}", n);
+  }
+
   function campoPassi(sc) {
     sc.passi = sc.passi || [];
     const righe = sc.passi.map((p, i) => elemento("div", { classe: "riga-passo" }, [
       elemento("span", { classe: "numero-passo", testo: String(i + 1) }),
-      elemento("input", { type: "text", value: p.testo || "", "aria-label": `Testo del passo ${i + 1}`, oninput: (e) => modifica(() => (p.testo = e.target.value), { chiave: `passo-${i}` }) }),
+      elemento("input", { type: "text", value: p.testo || "", crudo: true, "aria-label": t("Testo del passo {n}", { n: i + 1 }), oninput: (e) => modifica(() => (p.testo = e.target.value), { chiave: `passo-${i}` }) }),
       elemento("button", { type: "button", classe: "mini", title: "Elimina passo", "aria-label": "Elimina passo", onclick: () => modifica(() => sc.passi.splice(i, 1), { proprieta: true }) }, "✕"),
     ]));
     return elemento("div", { classe: "campo" }, [
@@ -888,7 +920,7 @@
         type: "button", classe: "pulsante piccolo",
         onclick: () => modifica(() => {
           const posizione = SV.passiPredefiniti(new Array(6).fill(""))[sc.passi.length % 6];
-          sc.passi.push(Object.assign(posizione, { testo: `Passo ${sc.passi.length + 1}` }));
+          sc.passi.push(Object.assign(posizione, { testo: nomePasso(sc.passi.length + 1) }));
         }, { proprieta: true }),
       }, "+ Aggiungi passo"),
     ]);
@@ -955,7 +987,7 @@
           tela.setPointerCapture(e.pointerId);
           return;
         }
-        modifica(() => sc.passi.push({ testo: `Passo ${sc.passi.length + 1}`, x: (p.x - m.vx) / m.vw, y: (p.y - m.vy) / m.vh }), { proprieta: true });
+        modifica(() => sc.passi.push({ testo: nomePasso(sc.passi.length + 1), x: (p.x - m.vx) / m.vw, y: (p.y - m.vy) / m.vh }), { proprieta: true });
         // dopo il pointerdown il browser sposta il focus: lo mettiamo nel campo subito dopo
         e.preventDefault();
         setTimeout(() => {
@@ -1137,6 +1169,16 @@
     $("#carattere").addEventListener("change", (e) => modifica(() => (stato.progetto.carattere = e.target.value)));
     $("#transizione").addEventListener("change", (e) => modifica(() => (stato.progetto.transizione = e.target.value)));
     $("#animazione").addEventListener("change", (e) => modifica(() => (stato.progetto.animazione = e.target.value)));
+    $("#lingua-video").addEventListener("change", (e) => modifica(() => (stato.progetto.lingua = e.target.value)));
+    // lingua dell'interfaccia (ricarica la pagina; il progetto è già salvato)
+    const selUI = $("#lingua-ui");
+    selUI.replaceChildren(...Object.entries(SV.LINGUE_UI).map(([k, nome]) => Object.assign(document.createElement("option"), { value: k, textContent: nome })));
+    selUI.value = SV.linguaUI;
+    selUI.addEventListener("change", async (e) => {
+      clearTimeout(timerSalva);
+      await SV.archivio.scrivi(stato.progetto).catch(() => {});
+      SV.cambiaLingua(e.target.value);
+    });
     $("#marchio-nome").addEventListener("input", (e) => modifica(() => (stato.progetto.marchio.nome = e.target.value), { chiave: "marchio-nome" }));
     $("#marchio-url").addEventListener("input", (e) => modifica(() => (stato.progetto.marchio.url = e.target.value), { chiave: "marchio-url" }));
     $("#volume").addEventListener("input", (e) => {
@@ -1147,7 +1189,7 @@
       const f = e.target.files[0];
       if (!f) return;
       if (f.size > 25e6) {
-        alert("File troppo grande (massimo 25 MB). Usa un MP3.");
+        alert(t("File troppo grande (massimo 25 MB). Usa un MP3."));
         return;
       }
       const url = await leggiFile(f);
@@ -1184,7 +1226,7 @@
         registraStoria(null);
         carica(p);
       } catch (err) {
-        alert("Questo file non è un progetto di Studio Video valido.");
+        alert(t("Questo file non è un progetto di Studio Video valido."));
       }
     });
     $("#copertina").addEventListener("click", () => {
@@ -1207,7 +1249,7 @@
     const sel = $("#gen-marca");
     sel.replaceChildren(
       elemento("option", { value: "", testo: marche.length ? "— Nessuna, parto da zero —" : "— Nessuna marca salvata —" }),
-      ...marche.map((m) => elemento("option", { value: m.id, testo: m.url ? `${m.nome} · ${m.url.replace(/^https?:\/\//, "")}` : m.nome })),
+      ...marche.map((m) => elemento("option", { value: m.id, crudo: true, testo: m.url ? `${m.nome} · ${m.url.replace(/^https?:\/\//, "")}` : m.nome })),
     );
     sel.value = scelta && marche.some((m) => m.id === scelta) ? scelta : "";
     $("#riga-gen-marca").classList.toggle("con-marca", Boolean(sel.value));
@@ -1228,6 +1270,7 @@
     if (SV.TEMI[d.tema]) f.tema.value = d.tema;
     if (SV.CARATTERI[d.carattere]) f.carattere.value = d.carattere;
     if (SV.FORMATI[d.formato]) f.formato.value = d.formato;
+    if (SV.LINGUE[d.lingua]) f.lingua.value = d.lingua;
     datiGeneratore.logo = d.logo;
     campoImmagine($("#gen-logo"), d.logo, (v) => (datiGeneratore.logo = v), true);
   }
@@ -1251,9 +1294,10 @@
     );
     fs.addEventListener("change", () => {
       const tut = $("#modulo-generatore").modello.value === "tutorial";
-      $("#etichetta-vantaggi").textContent = tut ? "Passi del tutorial (uno per riga, massimo 6)" : "Vantaggi (uno per riga, massimo 5)";
+      $("#etichetta-vantaggi").textContent = t(tut ? "Passi del tutorial (uno per riga, massimo 6)" : "Vantaggi (uno per riga, massimo 5)");
     });
     riempiScelta($("#gen-formato"), SV.FORMATI, "9:16");
+    riempiLingue($("#gen-lingua"), SV.LINGUE[SV.linguaUI] ? SV.linguaUI : "en");
     riempiTemi($("#gen-tema"), "limone");
     riempiScelta($("#gen-carattere"), SV.CARATTERI, "auto");
     campoImmagine($("#gen-immagine"), "", (v) => (datiGeneratore.immagine = v));
@@ -1271,6 +1315,7 @@
         vantaggi: f.vantaggi.value,
         invito: f.invito.value.trim(),
         formato: f.formato.value,
+        lingua: f.lingua.value,
         tema: f.tema.value,
         carattere: f.carattere.value,
         immagine: datiGeneratore.immagine,
@@ -1385,12 +1430,12 @@
       );
       const scelta = scegliFormatoVideo();
       $("#nota-codec").textContent = scelta
-        ? `Durata ${mmss(SV.durataTotale(stato.progetto))} per formato · file ${scelta.est.toUpperCase()}${scelta.est === "webm" ? " (questo browser non registra MP4: usa Chrome o Edge aggiornati, oppure il comando npm run render)" : ""}`
-        : "Questo browser non può registrare video. Usa Chrome, Edge o Firefox aggiornati.";
+        ? t("Durata {durata} per formato · file {tipo}", { durata: mmss(SV.durataTotale(stato.progetto)), tipo: scelta.est.toUpperCase() }) + (scelta.est === "webm" ? t(" (questo browser non registra MP4: usa Chrome o Edge aggiornati, oppure il comando npm run render)") : "")
+        : t("Questo browser non può registrare video. Usa Chrome, Edge o Firefox aggiornati.");
       $("#avvia-esporta").disabled = !scelta;
       const vuoti = SV.daCompilare(stato.progetto);
       if (vuoti.length) {
-        $("#nota-codec").textContent += ` · ⚠ Testi da compilare [[...]] nelle scene ${vuoti.map((i) => i + 1).join(", ")}: metti dati veri prima di consegnare.`;
+        $("#nota-codec").textContent += " · ⚠ " + t("Testi da compilare [[...]] nelle scene {scene}: metti dati veri prima di consegnare.", { scene: vuoti.map((i) => i + 1).join(", ") });
       }
       $("#risultati").replaceChildren();
       $("#avanzamento").hidden = true;
@@ -1402,25 +1447,25 @@
       if (!formati.length) return;
       const pulsante = $("#avvia-esporta");
       pulsante.disabled = true;
-      $("#chiudi-esporta").textContent = "Annulla";
+      $("#chiudi-esporta").textContent = t("Annulla");
       $("#avanzamento").hidden = false;
       for (const [n, formato] of formati.entries()) {
-        const etichetta = `${formato} (${n + 1} di ${formati.length})`;
+        const etichetta = t("{formato} ({n} di {totale})", { formato, n: n + 1, totale: formati.length });
         const r = await registra(formato, (p) => {
           $("#barra-piena").style.width = `${Math.round(p * 100)}%`;
-          $("#testo-avanzamento").textContent = `Registro ${etichetta}… ${Math.round(p * 100)}%`;
+          $("#testo-avanzamento").textContent = t("Registro {cosa}… {percento}%", { cosa: etichetta, percento: Math.round(p * 100) });
         });
         if (!r) break;
         const nome = `${nomeSicuro(stato.progetto.nome)}-${formato.replace(":", "x")}.${r.est}`;
         const url = URL.createObjectURL(r.blob);
         $("#risultati").append(elemento("li", {}, [
-          elemento("a", { href: url, download: nome, classe: "pulsante piccolo principale", testo: `Scarica ${nome}` }),
+          elemento("a", { href: url, download: nome, classe: "pulsante piccolo principale", testo: t("Scarica {file}", { file: nome }) }),
           elemento("span", { classe: "tenue", testo: ` ${(r.blob.size / 1e6).toFixed(1)} MB` }),
         ]));
         scarica(r.blob, nome);
       }
-      $("#testo-avanzamento").textContent = "Fatto.";
-      $("#chiudi-esporta").textContent = "Chiudi";
+      $("#testo-avanzamento").textContent = t("Fatto.");
+      $("#chiudi-esporta").textContent = t("Chiudi");
       pulsante.disabled = false;
       ridisegna();
     });
@@ -1473,6 +1518,7 @@
   }
 
   async function avvia() {
+    SV.traduciPagina();
     collegaComandi();
     preparaGeneratore();
     preparaEsportazione();
