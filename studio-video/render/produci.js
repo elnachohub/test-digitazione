@@ -13,6 +13,16 @@
  *     controlla ogni video × lingua, fa i provini, rende tutti i formati e scrive
  *     revisione.html (per approvare in pochi minuti) e consegna.md.
  *
+ *   node render/produci.js consegna --cartella ordini/<cliente> --agenzia "Nome agenzia" [--logo logo.png] [--risposte email] [--lingua-pagina it|en]
+ *     pagina WHITE-LABEL per l'agenzia (consegna-agenzia/ + .zip): video, formati da
+ *     scaricare, "Approvato" / "Modifiche" video per video, esito per email o da copiare.
+ *
+ *   node render/produci.js esito --cartella ordini/<cliente> [--file esito.txt]
+ *     registra l'esito mandato dall'agenzia (il testo con la riga ESITO-JSON; senza
+ *     --file lo legge dall'ingresso standard).
+ *
+ * Cruscotto di tutti gli ordini: ordini/index.html (si aggiorna a ogni passo).
+ *
  * In mezzo lavora la squadra (comando /produci in Claude Code): migliora i testi,
  * traduce le lingue mancanti, sistema i ritocchi. Niente numeri né recensioni
  * inventati: le bozze non hanno scene "numeri" e "citazione".
@@ -29,6 +39,8 @@ require("../js/marca.js");
 const SV = globalThis.StudioVideo;
 const { catturaSito } = require("./cattura-sito.js");
 const { leggiMarche } = require("./render.js");
+const { creaConsegna, applicaEsito } = require("./consegna.js");
+const { scriviCruscotto } = require("./cruscotto.js");
 
 const RADICE = path.resolve(__dirname, "..");
 const VIDEO_PREDEFINITI = ["promo", "presentazione"];
@@ -53,6 +65,12 @@ function argomenti(argv) {
     else if (a === "--solo") o.solo = v().toLowerCase();
     else if (a === "--cartella") o.cartella = v();
     else if (a === "--senza-video") o.senzaVideo = true;
+    else if (a === "--prezzo") o.prezzo = v();
+    else if (a === "--agenzia") o.agenzia = v();
+    else if (a === "--logo") o.logo = v();
+    else if (a === "--risposte") o.risposte = v();
+    else if (a === "--lingua-pagina") o.linguaPagina = v();
+    else if (a === "--file") o.file = v();
     else if (a.startsWith("--")) throw new Error(`opzione sconosciuta: ${a}`);
     else o.url = a;
   }
@@ -191,6 +209,11 @@ async function prepara(o) {
   fs.mkdirSync(cartella, { recursive: true });
   const marca = o.marca ? leggiMarche(o.marca, o.solo)[0] : null;
   const ordine = { cliente, indirizzo: o.url, lingue: o.lingue, video, creato: ora(), tempi: {}, lingueSito: {}, daTradurre: [] };
+  if (o.prezzo) {
+    const m = /^([\d.,]+)\s*([A-Za-z€£$]{1,3})?$/.exec(o.prezzo.trim());
+    if (!m) throw new Error(`--prezzo "${o.prezzo}" non valido (es. "149 EUR")`);
+    ordine.prezzo = { importo: Number(m[1].replace(",", ".")), valuta: ({ "€": "EUR", "£": "GBP", $: "USD" })[m[2]] || (m[2] || "EUR").toUpperCase() };
+  }
   const { chromium } = require("playwright");
   const browser = await chromium.launch();
   const inizio = Date.now();
@@ -261,6 +284,7 @@ async function prepara(o) {
     const r = spawnSync(process.execPath, [path.join(__dirname, "verifica.js"), path.join(cartella, f)], { encoding: "utf8" });
     process.stdout.write(r.stdout.replace(/^/gm, "  "));
   }
+  scriviCruscotto(path.dirname(cartella));
   console.log(`\nBozze in ${cartella}\nDopo la squadra (o subito, per una prova): node render/produci.js finisci --cartella ${path.relative(process.cwd(), cartella) || "."}`);
 }
 
@@ -341,6 +365,7 @@ function finisci(o) {
       }
       console.log(`• rendo ${riga.tipo} · ${riga.lingua} × ${formati.length} formati`);
       riga.formati = formati;
+      riga.rifatto = true; // un video cambiato va approvato di nuovo dall'agenzia
       // un progetto alla volta: i nomi veri dei file si leggono dall'uscita (→ percorso)
       const r = spawnSync(process.execPath, [path.join(__dirname, "render.js"), path.join(cartella, riga.file), "--formati", formati.join(","), "--uscita", cartellaVideo], { encoding: "utf8" });
       riga.video = (r.stdout.match(/→ (.+\.mp4)/g) || []).map((x) => path.relative(cartella, path.resolve(x.slice(2).trim())).split(path.sep).join("/"));
@@ -353,10 +378,23 @@ function finisci(o) {
     ordine.tempi.rendering = Math.round((Date.now() - t0) / 1000);
   }
   ordine.finito = ora();
+  // decisioni dell'agenzia: restano sui video non cambiati; un video rifatto va riapprovato
+  const vecchi = new Map((ordine.risultati || []).map((r) => [r.file, r]));
+  for (const riga of righe) {
+    const prima = vecchi.get(riga.file);
+    if (!prima || !prima.cliente) continue;
+    if (riga.rifatto || riga.stato !== "pronto") riga.clientePrecedente = prima.cliente;
+    else riga.cliente = prima.cliente;
+  }
   ordine.risultati = righe;
   fs.writeFileSync(fileOrdine, JSON.stringify(ordine, null, 2) + "\n");
   fs.writeFileSync(path.join(cartella, "revisione.html"), paginaRevisione(ordine, righe));
-  fs.writeFileSync(path.join(cartella, "consegna.md"), consegna(ordine, righe, formati));
+  // le note scritte a mano dal regista in fondo a consegna.md restano
+  const fileConsegna = path.join(cartella, "consegna.md");
+  const vecchio = fs.existsSync(fileConsegna) ? fs.readFileSync(fileConsegna, "utf8") : "";
+  const note = vecchio.indexOf("\n## Chiusura del regista");
+  fs.writeFileSync(fileConsegna, consegna(ordine, righe, formati) + (note >= 0 ? vecchio.slice(note) : ""));
+  scriviCruscotto(path.dirname(cartella));
   for (const r of righe) console.log(`  ${r.stato === "pronto" ? "✓" : r.stato === "bloccato" ? "✖" : "…"} ${r.tipo} · ${r.lingua} · ${r.stato}${r.video ? ` · ${r.video.length} MP4` : ""}`);
   console.log(`\nApri ${path.join(cartella, "revisione.html")} per approvare; riepilogo in consegna.md`);
 }
@@ -433,10 +471,47 @@ ${bloccati ? `## Bloccati (da sistemare prima della consegna)\n\n${bloccati}\n` 
 
 // ------------------------------------------------------------- avvio
 
+// ------------------------------------------------- consegna ed esito
+
+function leggiOrdine(o) {
+  const cartella = path.resolve(o.cartella || ".");
+  const file = path.join(cartella, "ordine.json");
+  if (!fs.existsSync(file)) throw new Error(`${cartella}: manca ordine.json (prima: produci.js prepara)`);
+  return { cartella, file, ordine: JSON.parse(fs.readFileSync(file, "utf8")) };
+}
+
+function consegnaAgenzia(o) {
+  const { cartella, file, ordine } = leggiOrdine(o);
+  ordine.consegnaAgenzia = ora();
+  for (const x of ordine.risultati || []) if (x.cliente && x.cliente.stato !== "approvato") delete x.cliente;
+  const r = creaConsegna(cartella, ordine, { agenzia: o.agenzia, logo: o.logo, risposte: o.risposte, lingua: o.linguaPagina });
+  ordine.agenzia = o.agenzia || "";
+  // nuova consegna: restano le approvazioni dei video non cambiati, il resto si decide di nuovo
+  delete ordine.esitoCliente;
+  for (const x of ordine.risultati || []) if (x.cliente && x.cliente.stato !== "approvato") delete x.cliente;
+  fs.writeFileSync(file, JSON.stringify(ordine, null, 2) + "\n");
+  scriviCruscotto(path.dirname(cartella));
+  console.log(`Pagina per l'agenzia (white-label): ${path.join(r.cartella, "index.html")} · ${r.video} MP4${r.zip ? `\nDa spedire: ${r.zip}` : ""}`);
+}
+
+function registraEsito(o) {
+  const { cartella, file, ordine } = leggiOrdine(o);
+  const testo = o.file ? fs.readFileSync(o.file, "utf8") : fs.readFileSync(0, "utf8");
+  const n = applicaEsito(ordine, testo);
+  fs.writeFileSync(file, JSON.stringify(ordine, null, 2) + "\n");
+  const righe = (ordine.risultati || []).filter((x) => x.cliente).map((x) => `| ${x.tipo} | ${SV.LINGUE[x.lingua].nome} | ${x.cliente.stato === "approvato" ? "✓ approvato" : "✎ modifiche"} | ${x.cliente.nota.replace(/\|/g, "/") || "—"} |`);
+  fs.writeFileSync(path.join(cartella, "esito-cliente.md"), `# Esito dell'agenzia — ${ordine.cliente}\n\nRicevuto il ${ordine.esitoCliente.slice(0, 16).replace("T", " ")}.\n\n| Video | Lingua | Esito | Nota |\n|---|---|---|---|\n${righe.join("\n")}\n`);
+  scriviCruscotto(path.dirname(cartella));
+  const modifiche = (ordine.risultati || []).filter((x) => x.cliente && x.cliente.stato === "modifiche");
+  console.log(`${n} decisioni registrate: ${n - modifiche.length} approvate, ${modifiche.length} con modifiche${modifiche.length ? `\n${modifiche.map((x) => `  ✎ ${x.tipo} · ${x.lingua}: ${x.cliente.nota}`).join("\n")}` : ""}`);
+}
+
 (async () => {
   const o = argomenti(process.argv.slice(2));
   if (o.comando === "prepara") await prepara(o);
   else if (o.comando === "finisci") finisci(o);
+  else if (o.comando === "consegna") consegnaAgenzia(o);
+  else if (o.comando === "esito") registraEsito(o);
   else {
     console.log(fs.readFileSync(__filename, "utf8").split("*/")[0].replace(/^#!.*\n\/\*\n?/, "").replace(/^ \* ?/gm, ""));
     process.exit(1);

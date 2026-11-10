@@ -69,7 +69,33 @@ RIFARE: rimanda al ruolo indicato, poi `finisci` e di nuovo revisore
 (massimo 2 giri; poi decidi tu e scrivilo). Il montatore entra solo se le
 note riguardano ritmo, durate o formati.
 
-## 5. Chiusura
+## 5. Consegna all'agenzia (macchina)
+
+```bash
+node render/produci.js consegna --cartella ordini/<cliente> --agenzia "<nome agenzia>" [--logo logo.png] [--risposte <email dell'agenzia o nostra>] [--lingua-pagina it|en]
+```
+
+Crea `consegna-agenzia/` (+ `.zip`): pagina WHITE-LABEL (nome e logo
+dell'agenzia, mai il nostro) con i video, i formati da scaricare e, per ogni
+video × lingua, «Approvato» / «Modifiche» con nota. L'agenzia rimanda l'esito
+per email o con «Copia l'esito».
+
+## 6. Esito dell'agenzia
+
+Quando arriva il messaggio dell'agenzia (deve contenere la riga `ESITO-JSON`):
+
+```bash
+node render/produci.js esito --cartella ordini/<cliente> --file esito.txt
+```
+
+Se ci sono modifiche: rimanda al ruolo giusto (testi → sceneggiatore o
+localizzatore, look → art director), poi `finisci` (rende solo ciò che è
+cambiato) e di nuovo `consegna`: i video già approvati restano approvati,
+quelli rifatti sono segnati «nuova versione».
+
+Il cruscotto di tutti gli ordini è `ordini/index.html` (si aggiorna da solo).
+
+## 7. Chiusura
 
 Completa `consegna.md`: minuti umani spesi (stima onesta: lettura della
 revisione + correzioni), cosa dire all'agenzia, cosa proporre la volta dopo.

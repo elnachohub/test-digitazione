@@ -73,7 +73,7 @@
     {
       "tipo": "cta",
       "durata": 4,
-      "titolo": "Pronto a iniziare?",
+      "titolo": "Prenotalo",
       "pulsante": "Prova gratis 14 giorni",
       "url": "https://prenotalo.example",
       "clic": true

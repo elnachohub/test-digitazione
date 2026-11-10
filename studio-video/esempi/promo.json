@@ -25,8 +25,8 @@
     },
     {
       "tipo": "punti",
-      "durata": 4.5,
-      "titolo": "In 3 parole?",
+      "durata": 5,
+      "titolo": "Perché sceglierci",
       "punti": [
         "Agenda sempre aggiornata",
         "Promemoria automatici ai clienti",
@@ -46,7 +46,7 @@
     {
       "tipo": "cta",
       "durata": 3.5,
-      "titolo": "Provalo adesso",
+      "titolo": "Prenotalo",
       "pulsante": "Prova gratis 14 giorni",
       "url": "https://prenotalo.example",
       "clic": true

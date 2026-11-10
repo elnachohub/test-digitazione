@@ -18,7 +18,7 @@
   "scene": [
     {
       "tipo": "titolo",
-      "durata": 3,
+      "durata": 4,
       "etichetta": "Tutorial",
       "titolo": "Prenotazioni online senza telefonate",
       "sottotitolo": "3 passi, meno di un minuto"
@@ -50,7 +50,7 @@
     },
     {
       "tipo": "punti",
-      "durata": 4.5,
+      "durata": 5,
       "titolo": "Riepilogo",
       "punti": [
         "Scegli il servizio",
@@ -60,7 +60,7 @@
     },
     {
       "tipo": "cta",
-      "durata": 3.5,
+      "durata": 4,
       "titolo": "Ora tocca a te",
       "pulsante": "Prova gratis 14 giorni",
       "url": "https://prenotalo.example",

@@ -183,11 +183,12 @@
         p.scene = [
           // niente "Novità" di serie: è un'affermazione, la mette solo chi sa che è vera
           { tipo: "titolo", durata: 3, etichetta: dati.etichetta || "", titolo: dati.slogan || dati.nome || T.prodotto, sottotitolo: dati.nome && dati.slogan ? dati.nome : "" },
-          { tipo: "punti", durata: 4.5, titolo: T.tre, punti: v.length ? v.slice(0, 3) : T.punti.slice() },
+          { tipo: "punti", durata: 4.5, titolo: dati.titoloPunti || T.puntiTitolo, punti: v.length ? v.slice(0, 3) : T.punti.slice() },
           { tipo: "schermata", durata: 4, titolo: "", testo: "", immagine: dati.immagine || "", dispositivo: dati.formato === "9:16" ? "telefono" : "browser", scorri: true, url: dati.url || "" },
-          { tipo: "cta", durata: 3.5, titolo: dati.invitoTitolo || T.provalo, pulsante: dati.invito || T.ctaPulsante, url: dati.url || "", clic: true },
+          // chiusura con dati veri: il nome del cliente e un'azione sempre vera ("Visita il sito")
+          { tipo: "cta", durata: 3.5, titolo: dati.invitoTitolo || dati.nome || T.prodotto, pulsante: dati.invito || T.visita, url: dati.url || "", clic: true },
         ];
-        return p;
+        return adattaDurate(p);
       },
     },
     presentazione: {
@@ -203,9 +204,9 @@
           { tipo: "punti", durata: 6, titolo: T.ottieni, punti: v.length ? v.slice(0, 5) : T.punti.slice() },
           TIPI.numeri.vuota(p.lingua),
           TIPI.citazione.vuota(p.lingua),
-          { tipo: "cta", durata: 4, titolo: dati.invitoTitolo || T.pronto, pulsante: dati.invito || T.visita, url: dati.url || "", clic: true },
+          { tipo: "cta", durata: 4, titolo: dati.invitoTitolo || dati.nome || T.sito, pulsante: dati.invito || T.visita, url: dati.url || "", clic: true },
         ];
-        return p;
+        return adattaDurate(p);
       },
     },
     tutorial: {
@@ -222,7 +223,7 @@
           { tipo: "punti", durata: 4.5, titolo: T.riepilogo, punti: elenco },
           { tipo: "cta", durata: 3.5, titolo: T.tocca, pulsante: dati.invito || T.provaOra, url: dati.url || "", clic: true },
         ];
-        return p;
+        return adattaDurate(p);
       },
     },
   };
@@ -316,6 +317,12 @@
         delete sc.animazione;
       }
     });
+    return p;
+  }
+
+  // Ogni scena dura almeno il tempo per leggerla (al mezzo secondo).
+  function adattaDurate(p) {
+    for (const sc of p.scene) sc.durata = Math.max(sc.durata, Math.ceil(durataMinima(sc) * 2) / 2);
     return p;
   }
 

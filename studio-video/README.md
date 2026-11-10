@@ -104,7 +104,18 @@ node render/produci.js finisci --cartella ordini/nome
 ```
 
 In Claude Code il comando `/produci` fa lavorare la squadra di agenti tra i
-due passaggi (testi, look, traduzioni, revisione).
+due passaggi (testi, look, traduzioni, revisione). Poi:
+
+```bash
+node render/produci.js consegna --cartella ordini/nome --agenzia "Agenzia Srl"
+#   pagina white-label per l'agenzia (video, formati, Approvato/Modifiche) + zip
+node render/produci.js esito --cartella ordini/nome --file esito.txt
+#   registra la risposta dell'agenzia; le modifiche tornano alla squadra
+```
+
+Il **cruscotto** di tutti gli ordini è `ordini/index.html`: fase, prossima
+azione, video × lingua, valore, tempo macchina. Il giro completo, passo per
+passo, è in `docs/come-funziona.md`.
 
 **Un video × N lingue**:
 
