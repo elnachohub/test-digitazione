@@ -345,7 +345,8 @@ function finisci(o) {
       righe.push(riga);
     }
   }
-  ordine.tempi.controlli = Math.round((Date.now() - inizio) / 1000);
+  // i tempi si sommano giro dopo giro (ogni finisci aggiunge il suo)
+  ordine.tempi.controlli = (ordine.tempi.controlli || 0) + Math.round((Date.now() - inizio) / 1000);
   if (daRendere.length && !o.senzaVideo) {
     const t0 = Date.now();
     const cartellaVideo = path.join(cartella, "video");
@@ -375,7 +376,7 @@ function finisci(o) {
         console.error(`  ! ${riga.file}: rendering fallito`);
       }
     }
-    ordine.tempi.rendering = Math.round((Date.now() - t0) / 1000);
+    ordine.tempi.rendering = (ordine.tempi.rendering || 0) + Math.round((Date.now() - t0) / 1000);
   }
   ordine.finito = ora();
   // decisioni dell'agenzia: restano sui video non cambiati; un video rifatto va riapprovato
