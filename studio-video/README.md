@@ -1,5 +1,7 @@
 # Studio Video
 
+> Prima volta? Leggi **[INIZIA-QUI.md](INIZIA-QUI.md)**.
+
 Crea in pochi minuti **video promozionali, presentazioni e tutorial** per siti
 web, già impaginati per ogni formato: 16:9 (YouTube, sito), 9:16 (Reels,
 TikTok, Shorts), 1:1 e 4:5 (feed). Niente server, niente abbonamenti: gira

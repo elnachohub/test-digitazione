@@ -3,18 +3,22 @@
   "version": "0.1.0",
   "private": true,
   "description": "Video promozionali, presentazioni e tutorial per siti web, in tutti i formati social.",
-  "license": "UNLICENSED",
+  "license": "SEE LICENSE IN LICENSE",
   "scripts": {
     "avvia": "python3 -m http.server 8000",
     "render": "node render/render.js",
     "esempi": "node esempi/genera.js",
     "esempi:video": "node render/render.js esempi/promo.json esempi/presentazione.json esempi/tutorial.json --tutti --bozza",
-    "esempi:marche": "node render/render.js esempi/modello-promo.json --marca esempi/marche.json"
+    "esempi:marche": "node render/render.js esempi/modello-promo.json --marca esempi/marche.json",
+    "produci": "node render/produci.js",
+    "cruscotto": "node render/cruscotto.js",
+    "collaudo": "node test/collaudo.js"
   },
   "devDependencies": {
     "playwright": "^1.48.0"
   },
   "engines": {
     "node": ">=18"
-  }
+  },
+  "author": "elnachohub"
 }
