@@ -1,0 +1,17 @@
+{
+  "name": "tickless-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Tickless backend: static hosting, realtime sync and AI answers for the widget and the agent console.",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.13.0",
+    "zod": "^4.6.7"
+  }
+}

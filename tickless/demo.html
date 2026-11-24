@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Acme Cloud — demo customer site (Tickless)</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    :root { --ink: #16181d; --ink2: #5b6070; --line: #e6e7eb; --bg: #fafaf8; --brand: #2a78d6; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); background: var(--bg); }
+    @media (prefers-color-scheme: dark) { :root { --ink: #eeeeea; --ink2: #a9abb3; --line: #2b2d33; --bg: #121316; } }
+    body { margin: 0; }
+    .demo-bar { background: #111; color: #f0efec; font-size: 13px; padding: 9px 16px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; justify-content: center; text-align: center; }
+    .demo-bar a { color: #9ec5f4; font-weight: 600; }
+    .preview .demo-bar, .preview header, .preview main { display: none; }
+    header { display: flex; align-items: center; gap: 28px; padding: 16px 32px; border-bottom: 1px solid var(--line); }
+    .logo { font-weight: 800; font-size: 19px; letter-spacing: -.02em; display: flex; gap: 8px; align-items: center; }
+    .logo i { width: 22px; height: 22px; border-radius: 7px; background: linear-gradient(135deg, var(--brand), #6250d6); display: inline-block; }
+    nav { display: flex; gap: 18px; flex: 1; } nav a { color: var(--ink2); text-decoration: none; font-weight: 500; } nav a.on { color: var(--ink); }
+    .btn { border: 0; background: var(--brand); color: #fff; padding: 10px 16px; border-radius: 10px; font: inherit; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; }
+    .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+    main { max-width: 980px; margin: 0 auto; padding: 48px 24px 120px; }
+    section { display: none; } section.on { display: block; }
+    h1 { font-size: 44px; letter-spacing: -.03em; margin: 0 0 12px; line-height: 1.05; } h2 { font-size: 28px; margin: 0 0 8px; }
+    .lead { font-size: 18px; color: var(--ink2); max-width: 620px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-top: 28px; }
+    .card { border: 1px solid var(--line); border-radius: 16px; padding: 20px; background: color-mix(in srgb, var(--bg) 92%, #fff); }
+    .card h3 { margin: 0 0 6px; } .card p { color: var(--ink2); margin: 0 0 14px; }
+    .price { font-size: 32px; font-weight: 800; margin: 4px 0 12px; } .price small { font-size: 14px; color: var(--ink2); font-weight: 500; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
+    .invoice { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--line); }
+    .pill { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: #fde7e7; color: #8a1f1f; font-weight: 600; }
+    @media (prefers-color-scheme: dark) { .pill { background: #3d1c1c; color: #ffb4b4; } }
+    .tip { font-size: 13px; color: var(--ink2); margin-top: 28px; border-left: 3px solid var(--brand); padding-left: 12px; }
+    @media (max-width: 640px) { header { padding: 12px 16px; gap: 12px; flex-wrap: wrap; } h1 { font-size: 32px; } }
+  </style>
+</head>
+<body>
+  <div class="demo-bar">
+    <span><b>Live demo.</b> Acme Cloud is a fictional company running the Tickless widget.</span>
+    <a href="console.html" target="_blank" rel="noopener">Open the agent console in a new tab →</a>
+    <span>Chat here, answer there — it syncs live.</span>
+  </div>
+  <header>
+    <div class="logo"><i></i>Acme Cloud</div>
+    <nav>
+      <a href="#home" data-p="home">Product</a>
+      <a href="#pricing" data-p="pricing">Pricing</a>
+      <a href="#billing" data-p="billing">Billing</a>
+      <a href="#help" data-p="help">Help</a>
+    </nav>
+    <button class="btn ghost" id="login">Sign in as demo user</button>
+  </header>
+  <main>
+    <section data-s="home">
+      <h1>Plan projects your team actually finishes.</h1>
+      <p class="lead">Boards, docs and timelines in one place. (This page exists so you can test the support widget in the corner — try asking it something.)</p>
+      <div class="row">
+        <button class="btn" onclick="Tickless.ask('I forgot my password')">Ask: “I forgot my password”</button>
+        <button class="btn ghost" onclick="Tickless.ask('¿Dónde descargo mi factura?')">Ask in Spanish</button>
+        <button class="btn ghost" onclick="Tickless.ask('This is the WORST service, I was charged twice!!')">Simulate an angry customer</button>
+        <button class="btn ghost" onclick="Tickless.ask('Do you have a Linux desktop app?')">Ask something unknown</button>
+      </div>
+      <p class="tip">Every unknown question becomes a <b>content gap</b> in the console, with one click to turn it into an article.</p>
+    </section>
+    <section data-s="pricing">
+      <h2>Pricing</h2>
+      <p class="lead">Wait ~10 seconds on this page: the assistant will proactively offer help (a <b>proactive trigger</b> configured in the console).</p>
+      <div class="grid">
+        <div class="card"><h3>Free</h3><div class="price">$0</div><p>Up to 3 users.</p></div>
+        <div class="card"><h3>Team</h3><div class="price">$8 <small>/user/mo</small></div><p>Unlimited projects and integrations.</p></div>
+        <div class="card"><h3>Business</h3><div class="price">$16 <small>/user/mo</small></div><p>SSO, audit log, priority support.</p></div>
+      </div>
+    </section>
+    <section data-s="billing">
+      <h2>Billing</h2>
+      <p class="lead">Your last payment failed. <span class="pill">Payment failed</span></p>
+      <div class="card" style="margin-top:20px">
+        <div class="invoice"><span>INV-20931 · Nov 1</span><b>$672.00</b></div>
+        <div class="invoice"><span>INV-20877 · Oct 1</span><b>$672.00</b></div>
+        <div class="row"><button class="btn" onclick="Tickless.startFlow('fl_payment')">Fix my payment problem</button></div>
+      </div>
+      <p class="tip">That button deep-links into a <b>troubleshooter</b> with <code>Tickless.startFlow('fl_payment')</code>.</p>
+    </section>
+    <section data-s="help">
+      <h2>Help center</h2>
+      <p class="lead">Guided fixes, available 24/7 in six languages.</p>
+      <div class="grid">
+        <div class="card"><h3>Can't log in</h3><p>Password, 2FA, locked account.</p><button class="btn" onclick="Tickless.startFlow('fl_login')">Start</button></div>
+        <div class="card"><h3>App is slow</h3><p>Three checks that fix most cases.</p><button class="btn" onclick="Tickless.startFlow('fl_slow')">Start</button></div>
+        <div class="card"><h3>Missing notifications</h3><p>Digest, spam filters, delivery.</p><button class="btn" onclick="Tickless.startFlow('fl_notif')">Start</button></div>
+      </div>
+    </section>
+  </main>
+  <script>
+    if (/[?&]preview=1/.test(location.search)) document.documentElement.classList.add("preview");
+    function route() {
+      const p = (location.hash || "#home").slice(1);
+      document.querySelectorAll("section").forEach((s) => s.classList.toggle("on", s.dataset.s === p));
+      document.querySelectorAll("nav a").forEach((a) => a.classList.toggle("on", a.dataset.p === p));
+    }
+    addEventListener("hashchange", route); route();
+    document.getElementById("login").onclick = function () {
+      Tickless.identify({ name: "Jordan Demo", email: "jordan@example.com", plan: "Team" });
+      this.textContent = "Signed in as Jordan (Team)";
+    };
+  </script>
+  <script src="widget.js" data-workspace="demo" async></script>
+</body>
+</html>

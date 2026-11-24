@@ -8,3 +8,9 @@ errori e fluidità.
 
 Profili e risultati restano solo nel tuo browser: il sito non ha un server e
 non raccoglie dati personali.
+
+---
+
+**Nuovo progetto in questo repository:** [Tickless](tickless/) — assistenza
+clienti con chatbot, troubleshooter guidati e analytics per aziende digitali.
+Demo: https://elnachohub.github.io/test-digitazione/tickless/

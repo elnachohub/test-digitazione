@@ -34,6 +34,8 @@ self.addEventListener("fetch", (evento) => {
   const richiesta = evento.request;
   // Solo letture dei nostri file: tutto il resto passa senza toccarlo.
   if (richiesta.method !== "GET" || new URL(richiesta.url).origin !== self.location.origin) return;
+  // Tickless (cartella tickless/) è un progetto a parte: niente cache del test di digitazione.
+  if (new URL(richiesta.url).pathname.includes("/tickless/")) return;
   evento.respondWith(
     fetch(richiesta)
       .then((risposta) => {
