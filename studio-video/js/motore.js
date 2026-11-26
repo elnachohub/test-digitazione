@@ -1212,28 +1212,34 @@
         if (telefono) rettangoloTondo(ctx, m.vx, m.vy, m.vw, m.vh, m.raggio * 0.8);
         else rettangoloTondo(ctx, m.vx, m.vy - m.barra, m.vw, m.vh + m.barra, m.barra * 0.45);
         ctx.clip();
-        if (!telefono) {
-          ctx.beginPath();
-          ctx.rect(m.vx, m.vy, m.vw, m.vh);
-          ctx.clip();
+        // Telefono: barra di stato opaca sotto la tacca, la pagina comincia
+        // sotto (come in un browser vero), così la tacca non copre mai il sito.
+        const barraStato = telefono ? m.vh * 0.056 : 0;
+        const a = { x: m.vx, y: m.vy + barraStato, w: m.vw, h: m.vh - barraStato };
+        if (telefono) {
+          ctx.fillStyle = "#111318";
+          ctx.fillRect(m.vx, m.vy, m.vw, barraStato + 1);
         }
+        ctx.beginPath();
+        ctx.rect(a.x, a.y, a.w, a.h);
+        ctx.clip();
         if (img) {
-          const scala = m.vw / img.width;
+          const scala = a.w / img.width;
           const ih = img.height * scala;
-          if (sc.scorri && ih > m.vh * 1.05) {
-            const dy = facile.dentroFuori(p) * (ih - m.vh);
-            ctx.drawImage(img, m.vx, m.vy - dy, m.vw, ih);
+          if (sc.scorri && ih > a.h * 1.05) {
+            const dy = facile.dentroFuori(p) * (ih - a.h);
+            ctx.drawImage(img, a.x, a.y - dy, a.w, ih);
           } else {
             const z = 1 + 0.06 * facile.dentroFuori(p);
-            const zx = m.vx + m.vw / 2;
-            const zy = m.vy + m.vh / 2;
+            const zx = a.x + a.w / 2;
+            const zy = a.y + a.h / 2;
             ctx.translate(zx, zy);
             ctx.scale(z, z);
             ctx.translate(-zx, -zy);
-            disegnaCopertura(ctx, img, m.vx, m.vy, m.vw, m.vh, true);
+            disegnaCopertura(ctx, img, a.x, a.y, a.w, a.h, true);
           }
         } else {
-          sitoFinto(ctx, m.vx, m.vy, m.vw, m.vh, tema, telefono);
+          sitoFinto(ctx, a.x, a.y, a.w, a.h, tema, telefono);
         }
         ctx.restore();
         if (telefono) isolaTelefono(ctx, m);
