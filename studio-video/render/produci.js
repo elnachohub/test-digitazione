@@ -83,14 +83,21 @@ function argomenti(argv) {
 const GENERICI = /^(perch[eé]|why|warum|pourquoi|por qu[eé]|porqu[eê]|waarom|dlaczego|chi siamo|about|über uns|qui sommes|sobre|over ons|o nas|contatt|contact|kontakt|newsletter|faq|blog|servizi|services|leistungen|prodotti|products|produkte|i nostri|our |unsere|nos |nuestr|scopri|discover|entdecken|découvr|descubr)/i;
 
 function nomeDaTitolo(sito) {
-  const parti = String(sito.titolo || "").split(/\s+[—–|·:-]\s+/);
-  const primo = (parti[0] || "").trim();
-  if (primo && parole(primo) <= 4) return primo;
+  const parti = String(sito.titolo || "").split(/\s+[—–|·:-]\s+/).map((p) => p.trim()).filter(Boolean);
+  let dominio = "";
   try {
-    return new URL(sito.indirizzo).hostname.replace(/^www\./, "").split(".")[0].replace(/^./, (c) => c.toUpperCase());
+    dominio = new URL(sito.indirizzo).hostname.replace(/^www\./, "").split(".")[0].toLowerCase();
   } catch (e) {
-    return primo || "Cliente";
+    /* indirizzo locale */
   }
+  const semplice = (t) => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+  // 1) la parte che è il nome del dominio (es. "Toolsuite" per toolsuite.us)
+  const comeDominio = dominio && parti.find((p) => semplice(p).includes(semplice(dominio)) && parole(p) <= 4);
+  if (comeDominio) return comeDominio.split(/[:|]/)[0].trim();
+  // 2) la prima parte breve che non sembra un indirizzo di pagina ("get-started", "home")
+  const buona = parti.find((p) => parole(p) <= 4 && !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(p) && !/^(home|homepage|benvenut[oi]|welcome)$/i.test(p));
+  if (buona) return buona;
+  return dominio ? dominio.replace(/^./, (c) => c.toUpperCase()) : parti[0] || "Cliente";
 }
 
 function accorcia(testo, massimo) {
@@ -118,17 +125,31 @@ function scegliTema(sito) {
   return lum < 90 ? "inchiostro" : "carta";
 }
 
+// Se il nome dato con --cliente è lo stesso trovato sul sito, vince quello dato (maiuscole giuste).
+function nomeScelto(trovato, cliente) {
+  const semplice = (t) => String(t || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  return cliente && semplice(cliente) === semplice(trovato) ? cliente : trovato;
+}
+
+// Il primo paragrafo che è testo per persone (niente CSS, codice o frammenti).
+function testoVero(paragrafi) {
+  return (paragrafi || []).find((p) => parole(p) >= 6 && !/[{};]|\/\*|sourceMappingURL|function\s*\(|=>/.test(p)) || "";
+}
+
 /** Dati per i modelli presi dal sito, nella sua lingua. Mancanze → [[...]] (verifica le blocca). */
-function datiDaSito(sito, lingua) {
+function datiDaSito(sito, lingua, cliente) {
   const T = SV.testiModello(lingua);
   const h = sito.titoli || [];
   const h1 = h[0] || "";
   const vantaggi = h.slice(1).filter((t) => !GENERICI.test(t) && parole(t) >= 2 && parole(t) <= 9);
   if (vantaggi.length < 3) {
-    for (const p of sito.paragrafi || []) if (parole(p) >= 2 && parole(p) <= 9 && !vantaggi.includes(p)) vantaggi.push(p);
+    for (const p of sito.paragrafi || []) if (parole(p) >= 2 && parole(p) <= 9 && !vantaggi.includes(p) && !/[{};]|\/\*/.test(p)) vantaggi.push(p);
   }
   const titoloPunti = h.slice(1).find((t) => GENERICI.test(t) && parole(t) <= 6) || T.puntiTitolo;
-  const pulsante = (sito.pulsanti || []).find((p) => parole(p) >= 1 && parole(p) <= 4);
+  // il pulsante dell'azione principale: prima quelli nel corpo della pagina (non il menu in alto)
+  const inPagina = new Set((sito.cliccabili || []).filter((c) => c.y > 0.12).map((c) => c.testo));
+  const candidati = (sito.pulsanti || []).filter((p) => parole(p) >= 1 && parole(p) <= 4);
+  const pulsante = candidati.find((p) => inPagina.has(p)) || candidati[0];
   let indirizzo = "";
   try {
     const u = new URL(sito.indirizzo);
@@ -137,9 +158,9 @@ function datiDaSito(sito, lingua) {
     /* indirizzo locale */
   }
   return {
-    nome: nomeDaTitolo(sito),
+    nome: nomeScelto(nomeDaTitolo(sito), cliente),
     slogan: parole(h1) && parole(h1) <= 10 ? h1 : accorcia(sito.descrizione || h1, 10),
-    descrizione: accorcia(sito.descrizione || (sito.paragrafi || [])[0] || "", 22),
+    descrizione: accorcia(testoVero([sito.descrizione]) || testoVero(sito.paragrafi) || "", 22),
     vantaggi: (vantaggi.length ? vantaggi.slice(0, 5) : ["[[vantaggio vero dal sito]]"]).join("\n"),
     titoloPunti,
     invito: pulsante || T.ctaPulsante,
@@ -257,7 +278,7 @@ async function prepara(o) {
       const file = l === principale ? `${tipo}.json` : `${tipo}-${l}.json`;
       if (conSito) {
         const sito = JSON.parse(fs.readFileSync(path.join(cartella, "sito", l, "sito.json"), "utf8"));
-        const p = bozza(tipo, datiDaSito(sito, l), path.join(cartella, "sito", l), `sito/${l}`, { tema: o.tema, temaSito, accento, marca });
+        const p = bozza(tipo, datiDaSito(sito, l, cliente), path.join(cartella, "sito", l), `sito/${l}`, { tema: o.tema, temaSito, accento, marca });
         p.nome = `${p.nome} ${l}`; // file MP4 distinti per lingua
         fs.writeFileSync(path.join(cartella, file), JSON.stringify(p, null, 2) + "\n");
         verifiche.push(file);

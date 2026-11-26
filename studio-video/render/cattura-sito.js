@@ -140,14 +140,17 @@ async function catturaSito(url, cartella, opzioni = {}) {
     await computer.screenshot({ path: path.join(cartella, "computer-pagina.jpg"), type: "jpeg", quality: 85, fullPage: true, clip: altezza > 9000 ? { x: 0, y: 0, width: 1440, height: 9000 } : undefined });
     dati.file = { computerPagina: "computer-pagina.jpg", computerSchermo: "computer-schermo.jpg", telefonoPagina: "telefono-pagina.jpg" };
     // logo: l'icona più grande dichiarata dal sito (PNG, JPG o SVG)
+    // si apre l'icona nel browser stesso: stessa rete (proxy compreso) e niente blocchi CORS
     if (dati.icona) {
-      const r = await computer.request.get(dati.icona, { timeout: 10000 }).catch(() => null);
+      const scheda = await browser.newPage();
+      const r = await scheda.goto(dati.icona, { timeout: 15000 }).catch(() => null);
       const tipo = r && r.ok() ? (r.headers()["content-type"] || "") : "";
-      const est = /svg/.test(tipo) ? ".svg" : /png/.test(tipo) ? ".png" : /jpe?g/.test(tipo) ? ".jpg" : "";
+      const est = /svg/.test(tipo) ? ".svg" : /png/.test(tipo) ? ".png" : /jpe?g/.test(tipo) ? ".jpg" : /webp/.test(tipo) ? ".webp" : "";
       if (est) {
         fs.writeFileSync(path.join(cartella, `logo${est}`), await r.body());
         dati.file.logo = `logo${est}`;
       }
+      await scheda.close();
     }
     await computer.close();
     const telefono = await browser.newPage({ ...devices["iPhone 13"] });
